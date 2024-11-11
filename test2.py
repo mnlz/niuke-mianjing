@@ -165,7 +165,7 @@ if __name__ == '__main__':
     db_connection = mysql.connector.connect(
         host="116.198.250.133",
         user="root",
-        password="root123456",
+        password="123456",
         database="mianjing",
         charset="utf8mb4"
     )
