@@ -5,6 +5,7 @@ import mysql.connector
 import time
 import json
 from get_info import extract_company_post
+from clean_data import clean_duplicate_and_empty_data
 
 # 获取当前时间的毫秒级时间戳
 timestamp = int(time.time() * 1000)
@@ -65,6 +66,7 @@ def get_onlieText(params):
 
 def strip_html_tags(text):
     return re.sub(r'<[^>]+>', '', text)
+    
 def get_content(response):
     data_to_save = []
     records = response.json().get("data", {}).get("records", [])
@@ -220,13 +222,14 @@ def export_titles_to_json(cnx):
 
 
 if __name__ == '__main__':
-    # db_remote_conn = mysql.connector.connect(
-    #     host="116.198.250.133",
-    #     user="root",
-    #     password="123456",
-    #     database="mianjing",
-    #     charset="utf8mb4"
-    # )
+    db_remote_conn = mysql.connector.connect(
+        host="116.198.250.133",
+        port=13306,  # 添加Docker映射的端口
+        user="root",
+        password="123456",
+        database="mianjing",
+        charset="utf8mb4"
+    )
     db_localhost_conn = mysql.connector.connect(
         host="127.0.0.1",
         user="root",
@@ -245,20 +248,23 @@ if __name__ == '__main__':
     new_totalPage = page_online_data['totalPage'] # 416
     update_page = new_totalPage - old_totalPage
     if update_page != 0:
-        for i in range(1,update_page+1):
+        for i in range(1,update_page+3):
             response_ = get_onlieText(get_params(i))
             # 获得解析之后的数据，保存到数据库中
             data_to_save = get_content(response_)
             # 远程数据库
-            # save_content_data(db_remote_conn,data_to_save)
+            save_content_data(db_remote_conn,data_to_save)
             # 本地数据库
             save_content_data(db_localhost_conn,data_to_save)
             # 保存到txt中
             save_text(data_to_save)
             # 打印保存的信息
             print("第{}页保存完毕，保存内容为:{}".format(i,data_to_save))
-        # 保存最新的页码
-        # save_page_data(db_remote_conn,page_online_data)
+        # 保存最新的页码 本地和远程
+        save_page_data(db_remote_conn,page_online_data)
         save_page_data(db_localhost_conn,page_online_data)
-
-
+        
+        # 清理重复和空数据
+        print("\n开始清理数据...")
+        clean_duplicate_and_empty_data(db_localhost_conn)
+        clean_duplicate_and_empty_data(db_remote_conn)
