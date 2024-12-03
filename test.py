@@ -12,41 +12,36 @@ timestamp = int(time.time() * 1000)
 
 
 
+
 headers = {
     "accept": "application/json, text/plain, */*",
     "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
     "origin": "https://www.nowcoder.com",
     "priority": "u=1, i",
     "referer": "https://www.nowcoder.com/",
-    "sec-ch-ua": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Microsoft Edge\";v=\"128\"",
+    "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": "\"Windows\"",
     "sec-fetch-dest": "empty",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-site",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest"
 }
 cookies = {
-    "NOWCODERUID": "79CF5DA56D034CD63E4FA1BD571129D4",
-    "NOWCODERCLINETID": "41358A50185AFEA32695823EA2494A89",
-    "gr_user_id": "ab4a81e0-992e-4e12-8956-1c56fa8f6e02",
-    "t": "0711EE6F4D7F6C7CF0B7B3CAA263617C",
+    "Hm_lvt_a808a1326b6c06c437de769d1b85b870": "1733202799",
+    "HMACCOUNT": "8C973B5DA7EF8AB7",
+    "gr_user_id": "6bcc403e-4846-4b49-91c9-9722dcaf3f34",
+    "c196c3667d214851b11233f5c17f99d5_gr_session_id": "d381dee3-924f-419c-8097-b3080930428f",
+    "c196c3667d214851b11233f5c17f99d5_gr_session_id_d381dee3-924f-419c-8097-b3080930428f": "true",
+    "NOWCODERCLINETID": "F7BC019E1A461B312E75753FD0B0EB00",
+    "NOWCODERUID": "9FB2402872047967F342FE27E873F6F7",
+    "acw_tc": "0ef65e424855bb101cba5976172046a7b7be43fd22248e726de41f6312648d5c",
+    "t": "F687C8F9323E86E630F11D6569BA289D",
+    "c196c3667d214851b11233f5c17f99d5_gr_last_sent_sid_with_cs1": "d381dee3-924f-419c-8097-b3080930428f",
     "c196c3667d214851b11233f5c17f99d5_gr_last_sent_cs1": "290269641",
-    "username": "%E8%90%8C%E9%92%A0%E7%B2%92%E9%B2%A8",
-    "username.sig": "XQkfrLqPGY6xXZL2dF8yDzPZUqBQmVJhyIcoHlsVdew",
-    "uid": "290269641",
-    "uid.sig": "Qpi1npE2EV0HUDIhcRASWFM8ElZJ2rUHkMX8h0JwIP4",
-    "isAgreementChecked": "true",
-    "Hm_lvt_a808a1326b6c06c437de769d1b85b870": "1724997286,1725017782,1725020127,1725108047",
-    "HMACCOUNT": "14C004ECB6B70208",
-    "c196c3667d214851b11233f5c17f99d5_gr_session_id": "fed87fbb-6aeb-4426-a4aa-42b58d59c090",
-    "c196c3667d214851b11233f5c17f99d5_gr_last_sent_sid_with_cs1": "fed87fbb-6aeb-4426-a4aa-42b58d59c090",
-    "c196c3667d214851b11233f5c17f99d5_gr_session_id_fed87fbb-6aeb-4426-a4aa-42b58d59c090": "true",
-    "acw_tc": "e1ff911afa64e341d6eb9bdb8135223a053d4abc3d1b0b45d6211e716b5e886f",
-    "displayStyle": "h5",
     "c196c3667d214851b11233f5c17f99d5_gr_cs1": "290269641",
-    "Hm_lpvt_a808a1326b6c06c437de769d1b85b870": "1725108528"
+    "Hm_lpvt_a808a1326b6c06c437de769d1b85b870": "1733202822"
 }
 url = "https://gw-c.nowcoder.com/api/sparta/home/tab/content"
 
@@ -242,11 +237,16 @@ if __name__ == '__main__':
     params = get_params(1)
     response = get_onlieText(params)
     # page_sql_data = get_total_pages(db_remote_conn)
+    page_size = 20
     page_sql_data = get_total_pages(db_localhost_conn)
     page_online_data = get_page_data(response)
-    old_totalPage = page_sql_data['totalPage'] # 373
+    old_totalPage = page_sql_data['totalPage'] # 373                   8613 - 8590 = 23
+    old_total = page_sql_data['total']
     new_totalPage = page_online_data['totalPage'] # 416
+    new_total = page_online_data['total']
     update_page = new_totalPage - old_totalPage
+    update_total = new_total - old_total
+    update_count = update_total/page_size +1
     if update_page != 0:
         for i in range(1,update_page+3):
             response_ = get_onlieText(get_params(i))
