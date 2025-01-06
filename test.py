@@ -103,7 +103,7 @@ def get_total_pages(db_connection):
     cursor = db_connection.cursor()
     try:
         # 构建查询语句
-        query = "SELECT totalPage,total FROM `update` ORDER BY `time` DESC LIMIT 1"
+        query = "SELECT totalPage,total FROM `update` where post = '后端' ORDER BY `time` DESC LIMIT 1"
         # 执行查询
         cursor.execute(query)
         # 获取查询结果
@@ -160,8 +160,8 @@ def save_content_data(db_connection,data_to_save):
 def save_page_data(db_connection,page_to_save):
     cursor = db_connection.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sql = "INSERT INTO `update` (`time`, `totalPage`,`total`) VALUES (%s, %s,%s)"
-    values = (now, page_to_save['totalPage'], page_to_save['total'])
+    sql = "INSERT INTO `update` (`time`,`totalPage`,`total`,`post`) VALUES (%s, %s,%s,%s)"
+    values = (now, page_to_save['totalPage'], page_to_save['total'],"后端")
     cursor.execute(sql, values)
     cursor.close()
     db_connection.commit()
@@ -240,15 +240,15 @@ if __name__ == '__main__':
     page_size = 20
     page_sql_data = get_total_pages(db_localhost_conn)
     page_online_data = get_page_data(response)
-    old_totalPage = page_sql_data['totalPage'] # 373                   8613 - 8590 = 23
+    old_totalPage = page_sql_data['totalPage'] # 373
     old_total = page_sql_data['total']
     new_totalPage = page_online_data['totalPage'] # 416
     new_total = page_online_data['total']
     update_page = new_totalPage - old_totalPage
     update_total = new_total - old_total
-    update_count = update_total/page_size +1
-    if update_page != 0:
-        for i in range(1,update_page+3):
+    update_count = int(update_total/page_size) +1
+    if update_total != 0:
+        for i in range(1,update_count+3):
             response_ = get_onlieText(get_params(i))
             # 获得解析之后的数据，保存到数据库中
             data_to_save = get_content(response_)

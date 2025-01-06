@@ -12,7 +12,7 @@ def extract_company_post(title):
     posts = data.get("posts", [])
 
     company = '未知公司'
-    post = 'java'
+    post = '后端'
 
     # 遍历公司列表以确定公司名称
     for comp in companies:
@@ -30,5 +30,4 @@ def extract_company_post(title):
         'company': company,
         'post': post
     }
-
 
