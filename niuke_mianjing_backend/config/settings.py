@@ -28,8 +28,9 @@ class Settings(BaseSettings):
     OPENAI_TEXT_MODEL: str
     OPENAI_IMAGE_MODEL: str
 
-    PROXY_HOST: str
-    PROXY_PORT: int
+    PROXY_ENABLED: bool = False
+    PROXY_HOST: Optional[str] = None
+    PROXY_PORT: Optional[str] = None
 
     MAX_PAGES: int
     SLEEP_INTERVAL: int
@@ -59,6 +60,9 @@ def get_db_config():
 
 
 def get_proxy_config():
+    if not settings.PROXY_ENABLED or not settings.PROXY_HOST or not settings.PROXY_PORT:
+        return None
+
     return {
         "http": f"http://{settings.PROXY_HOST}:{settings.PROXY_PORT}",
         "https": f"http://{settings.PROXY_HOST}:{settings.PROXY_PORT}",
