@@ -1,0 +1,4535 @@
+{
+    "success": true,
+    "code": 0,
+    "msg": "OK",
+    "data": {
+        "result": [
+            {
+                "jobInfo": {
+                    "id": 11226,
+                    "level": 1,
+                    "name": "软件开发"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11200,
+                            "level": 2,
+                            "name": "后端开发"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11002,
+                                    "level": 3,
+                                    "name": "Java"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11003,
+                                    "level": 3,
+                                    "name": "C++"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11004,
+                                    "level": 3,
+                                    "name": "PHP"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11005,
+                                    "level": 3,
+                                    "name": "golang"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11007,
+                                    "level": 3,
+                                    "name": "安全工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11008,
+                                    "level": 3,
+                                    "name": "游戏后端"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11009,
+                                    "level": 3,
+                                    "name": "区块链"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11010,
+                                    "level": 3,
+                                    "name": "信息技术岗"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11011,
+                                    "level": 3,
+                                    "name": "C工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11012,
+                                    "level": 3,
+                                    "name": "C#工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11013,
+                                    "level": 3,
+                                    "name": ".NET"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11014,
+                                    "level": 3,
+                                    "name": "Python"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11015,
+                                    "level": 3,
+                                    "name": "Delphi"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11016,
+                                    "level": 3,
+                                    "name": "GIS工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11017,
+                                    "level": 3,
+                                    "name": "VB"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11018,
+                                    "level": 3,
+                                    "name": "Perl"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11019,
+                                    "level": 3,
+                                    "name": "Ruby"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11020,
+                                    "level": 3,
+                                    "name": "Node.js"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11021,
+                                    "level": 3,
+                                    "name": "Erlang"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11234,
+                                    "level": 3,
+                                    "name": "后端工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142797,
+                                    "level": 3,
+                                    "name": "语音/视频/图形开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143752,
+                                    "level": 3,
+                                    "name": "全栈开发"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11201,
+                            "level": 2,
+                            "name": "前端开发"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11022,
+                                    "level": 3,
+                                    "name": "前端工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11235,
+                                    "level": 3,
+                                    "name": "Web前端"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11236,
+                                    "level": 3,
+                                    "name": "前端开发其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143742,
+                                    "level": 3,
+                                    "name": "游戏前端"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143751,
+                                    "level": 3,
+                                    "name": "HTML5"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11202,
+                            "level": 2,
+                            "name": "客户端开发"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11023,
+                                    "level": 3,
+                                    "name": "安卓"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11024,
+                                    "level": 3,
+                                    "name": "iOS开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11237,
+                                    "level": 3,
+                                    "name": "客户端其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142692,
+                                    "level": 3,
+                                    "name": "Unity3D客户端"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143753,
+                                    "level": 3,
+                                    "name": "客户端开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143754,
+                                    "level": 3,
+                                    "name": "UE4"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143755,
+                                    "level": 3,
+                                    "name": "COCOS2DX"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143910,
+                                    "level": 3,
+                                    "name": "引擎开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144428,
+                                    "level": 3,
+                                    "name": "UE5"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11203,
+                            "level": 2,
+                            "name": "测试"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11025,
+                                    "level": 3,
+                                    "name": "测试工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11026,
+                                    "level": 3,
+                                    "name": "测试开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11238,
+                                    "level": 3,
+                                    "name": "测试其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143761,
+                                    "level": 3,
+                                    "name": "游戏测试"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143762,
+                                    "level": 3,
+                                    "name": "硬件测试"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143763,
+                                    "level": 3,
+                                    "name": "软件测试"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143764,
+                                    "level": 3,
+                                    "name": "自动化测试"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11204,
+                            "level": 2,
+                            "name": "数据"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11027,
+                                    "level": 3,
+                                    "name": "数据分析师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11028,
+                                    "level": 3,
+                                    "name": "数据库工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11029,
+                                    "level": 3,
+                                    "name": "大数据开发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11239,
+                                    "level": 3,
+                                    "name": "数据其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143756,
+                                    "level": 3,
+                                    "name": "数据架构师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143757,
+                                    "level": 3,
+                                    "name": "ETL工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143758,
+                                    "level": 3,
+                                    "name": "数据采集"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143759,
+                                    "level": 3,
+                                    "name": "数据仓库"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143760,
+                                    "level": 3,
+                                    "name": "Hadoop"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143766,
+                                    "level": 3,
+                                    "name": "DBA"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11205,
+                            "level": 2,
+                            "name": "运维"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11030,
+                                    "level": 3,
+                                    "name": "运维工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11031,
+                                    "level": 3,
+                                    "name": "运维开发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11032,
+                                    "level": 3,
+                                    "name": "网络工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11033,
+                                    "level": 3,
+                                    "name": "系统工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11250,
+                                    "level": 3,
+                                    "name": "运维其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143765,
+                                    "level": 3,
+                                    "name": "网络安全"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143767,
+                                    "level": 3,
+                                    "name": "IT技术支持"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143768,
+                                    "level": 3,
+                                    "name": "系统安全"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11240,
+                            "level": 2,
+                            "name": "人工智能/算法"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11006,
+                                    "level": 3,
+                                    "name": "算法工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11241,
+                                    "level": 3,
+                                    "name": "深度学习"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11242,
+                                    "level": 3,
+                                    "name": "自然语言处理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11243,
+                                    "level": 3,
+                                    "name": "机器学习"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11244,
+                                    "level": 3,
+                                    "name": "搜索算法"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11245,
+                                    "level": 3,
+                                    "name": "数据挖掘"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11246,
+                                    "level": 3,
+                                    "name": "图像识别"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11247,
+                                    "level": 3,
+                                    "name": "语音识别"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11248,
+                                    "level": 3,
+                                    "name": "推荐算法"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11249,
+                                    "level": 3,
+                                    "name": "人工智能"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143769,
+                                    "level": 3,
+                                    "name": "智能驾驶系统工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143770,
+                                    "level": 3,
+                                    "name": "反欺诈/风控算法"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 142700,
+                            "level": 2,
+                            "name": "研发工程师"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 142701,
+                                    "level": 3,
+                                    "name": "研发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143068,
+                                    "level": 3,
+                                    "name": "嵌入式软件开发"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143846,
+                            "level": 2,
+                            "name": "销售技术支持"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 142693,
+                                    "level": 3,
+                                    "name": "售前技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143847,
+                                    "level": 3,
+                                    "name": "销售技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144387,
+                                    "level": 3,
+                                    "name": "商业技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144388,
+                                    "level": 3,
+                                    "name": "客户成功"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144390,
+                                    "level": 3,
+                                    "name": "售后技术工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11227,
+                    "level": 1,
+                    "name": "通信/硬件"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11206,
+                            "level": 2,
+                            "name": "硬件工程师"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11035,
+                                    "level": 3,
+                                    "name": "单片机"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11036,
+                                    "level": 3,
+                                    "name": "驱动开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11037,
+                                    "level": 3,
+                                    "name": "DSP工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11038,
+                                    "level": 3,
+                                    "name": "ARM工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11039,
+                                    "level": 3,
+                                    "name": "PCB工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11040,
+                                    "level": 3,
+                                    "name": "嵌入式工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11041,
+                                    "level": 3,
+                                    "name": "FPGA工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11251,
+                                    "level": 3,
+                                    "name": "硬件开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142744,
+                                    "level": 3,
+                                    "name": "BSP工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142798,
+                                    "level": 3,
+                                    "name": "OTA系统工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142800,
+                                    "level": 3,
+                                    "name": "电子工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142801,
+                                    "level": 3,
+                                    "name": "光学工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143076,
+                                    "level": 3,
+                                    "name": "基带工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143077,
+                                    "level": 3,
+                                    "name": "结构工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143783,
+                                    "level": 3,
+                                    "name": "实施工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143784,
+                                    "level": 3,
+                                    "name": "系统集成"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143834,
+                                    "level": 3,
+                                    "name": "嵌入式硬件工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143835,
+                                    "level": 3,
+                                    "name": "嵌入式软件工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143911,
+                                    "level": 3,
+                                    "name": "天线工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11207,
+                            "level": 2,
+                            "name": "电子/半导体"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11043,
+                                    "level": 3,
+                                    "name": "电路设计工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11044,
+                                    "level": 3,
+                                    "name": "射频工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11045,
+                                    "level": 3,
+                                    "name": "集成电路IC设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142195,
+                                    "level": 3,
+                                    "name": "soc前端设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142196,
+                                    "level": 3,
+                                    "name": "FAE"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142197,
+                                    "level": 3,
+                                    "name": "芯片研发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142745,
+                                    "level": 3,
+                                    "name": "电源工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142954,
+                                    "level": 3,
+                                    "name": "晶圆工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142955,
+                                    "level": 3,
+                                    "name": "品质工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142956,
+                                    "level": 3,
+                                    "name": "封装工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143229,
+                                    "level": 3,
+                                    "name": "芯片测试工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143781,
+                                    "level": 3,
+                                    "name": "IC验证工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143836,
+                                    "level": 3,
+                                    "name": "数字IC前端设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143837,
+                                    "level": 3,
+                                    "name": "数字IC后端设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143838,
+                                    "level": 3,
+                                    "name": "模拟IC设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143839,
+                                    "level": 3,
+                                    "name": "DFT工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143069,
+                            "level": 2,
+                            "name": "通信"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143070,
+                                    "level": 3,
+                                    "name": "无线通信工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143071,
+                                    "level": 3,
+                                    "name": "移动通讯工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143072,
+                                    "level": 3,
+                                    "name": "通信技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143073,
+                                    "level": 3,
+                                    "name": "通信设备工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143074,
+                                    "level": 3,
+                                    "name": "通信测试工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143075,
+                                    "level": 3,
+                                    "name": "通信研发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143771,
+                                    "level": 3,
+                                    "name": "通信标准化工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143772,
+                                    "level": 3,
+                                    "name": "光传输工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143773,
+                                    "level": 3,
+                                    "name": "电信交换工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143774,
+                                    "level": 3,
+                                    "name": "数据通信工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143775,
+                                    "level": 3,
+                                    "name": "通信电源工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143776,
+                                    "level": 3,
+                                    "name": "光网络工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143777,
+                                    "level": 3,
+                                    "name": "通信项目专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143778,
+                                    "level": 3,
+                                    "name": "电信网络工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143779,
+                                    "level": 3,
+                                    "name": "有线传输工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143780,
+                                    "level": 3,
+                                    "name": "光通信工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144391,
+                            "level": 2,
+                            "name": "技术支持"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144392,
+                                    "level": 3,
+                                    "name": "售前技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144393,
+                                    "level": 3,
+                                    "name": "售后技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144394,
+                                    "level": 3,
+                                    "name": "销售工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144395,
+                                    "level": 3,
+                                    "name": "技术支持工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11228,
+                    "level": 1,
+                    "name": "机械/制造"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11208,
+                            "level": 2,
+                            "name": "机械"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11046,
+                                    "level": 3,
+                                    "name": "机械设计/制造"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11047,
+                                    "level": 3,
+                                    "name": "热设计工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11048,
+                                    "level": 3,
+                                    "name": "精益工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11049,
+                                    "level": 3,
+                                    "name": "机械工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11050,
+                                    "level": 3,
+                                    "name": "机械设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11051,
+                                    "level": 3,
+                                    "name": "机械设备工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11052,
+                                    "level": 3,
+                                    "name": "机械维修/保养"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11053,
+                                    "level": 3,
+                                    "name": "机械制图"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11054,
+                                    "level": 3,
+                                    "name": "机械结构工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11055,
+                                    "level": 3,
+                                    "name": "工业工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11056,
+                                    "level": 3,
+                                    "name": "工艺/制程工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11057,
+                                    "level": 3,
+                                    "name": "材料工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11058,
+                                    "level": 3,
+                                    "name": "机电工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11059,
+                                    "level": 3,
+                                    "name": "CNC/数控"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11060,
+                                    "level": 3,
+                                    "name": "冲压工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11061,
+                                    "level": 3,
+                                    "name": "夹具工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11062,
+                                    "level": 3,
+                                    "name": "模具工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11063,
+                                    "level": 3,
+                                    "name": "焊接工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11064,
+                                    "level": 3,
+                                    "name": "注塑工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11065,
+                                    "level": 3,
+                                    "name": "铸造/锻造工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142694,
+                                    "level": 3,
+                                    "name": "机械其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142957,
+                                    "level": 3,
+                                    "name": "工业设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143078,
+                                    "level": 3,
+                                    "name": "建模仿真工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143793,
+                                    "level": 3,
+                                    "name": "其他机械职位"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143842,
+                                    "level": 3,
+                                    "name": "工艺整合工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11209,
+                            "level": 2,
+                            "name": "汽车制造"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11066,
+                                    "level": 3,
+                                    "name": "汽车设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11067,
+                                    "level": 3,
+                                    "name": "车身/造型设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11068,
+                                    "level": 3,
+                                    "name": "底盘工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11069,
+                                    "level": 3,
+                                    "name": "动力系统工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11070,
+                                    "level": 3,
+                                    "name": "内外饰设计工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11071,
+                                    "level": 3,
+                                    "name": "总装工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11072,
+                                    "level": 3,
+                                    "name": "汽车电子工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11073,
+                                    "level": 3,
+                                    "name": "汽车零部件设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11074,
+                                    "level": 3,
+                                    "name": "汽车项目管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142695,
+                                    "level": 3,
+                                    "name": "汽车制造其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142799,
+                                    "level": 3,
+                                    "name": "电池测试工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142802,
+                                    "level": 3,
+                                    "name": "车联网功能架构工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142803,
+                                    "level": 3,
+                                    "name": "整车软件集成工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142804,
+                                    "level": 3,
+                                    "name": "自动驾驶系统工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142958,
+                                    "level": 3,
+                                    "name": "质量工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143794,
+                                    "level": 3,
+                                    "name": "其他汽车制造职位"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143840,
+                                    "level": 3,
+                                    "name": "电池工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143841,
+                                    "level": 3,
+                                    "name": "电机工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144399,
+                                    "level": 3,
+                                    "name": "nvh工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143895,
+                            "level": 2,
+                            "name": "化工"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143896,
+                                    "level": 3,
+                                    "name": "化工项目经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143897,
+                                    "level": 3,
+                                    "name": "化工工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143898,
+                                    "level": 3,
+                                    "name": "实验室技术研发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143899,
+                                    "level": 3,
+                                    "name": "化学分析"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143900,
+                                    "level": 3,
+                                    "name": "涂料研发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143901,
+                                    "level": 3,
+                                    "name": "化妆品研发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143902,
+                                    "level": 3,
+                                    "name": "食品/饮料研发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143903,
+                                    "level": 3,
+                                    "name": "新材料/环保技术"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143904,
+                                    "level": 3,
+                                    "name": "石油石化"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143905,
+                                    "level": 3,
+                                    "name": "塑料工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144396,
+                            "level": 2,
+                            "name": "电气/自动化"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11034,
+                                    "level": 3,
+                                    "name": "自动化"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11042,
+                                    "level": 3,
+                                    "name": "电气工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143782,
+                                    "level": 3,
+                                    "name": "电气设计工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144397,
+                                    "level": 3,
+                                    "name": "电力电子工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144400,
+                            "level": 2,
+                            "name": "能源"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144401,
+                                    "level": 3,
+                                    "name": "储能系统工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144402,
+                                    "level": 3,
+                                    "name": "电化学工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144403,
+                                    "level": 3,
+                                    "name": "电芯研发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144404,
+                                    "level": 3,
+                                    "name": "电池研发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144405,
+                                    "level": 3,
+                                    "name": "材料研发工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144406,
+                                    "level": 3,
+                                    "name": "风电运维工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144407,
+                                    "level": 3,
+                                    "name": "光伏逆变器工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144408,
+                                    "level": 3,
+                                    "name": "光伏系统研发工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144409,
+                            "level": 2,
+                            "name": "技术支持"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144410,
+                                    "level": 3,
+                                    "name": "技术支持工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144411,
+                                    "level": 3,
+                                    "name": "销售工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144412,
+                                    "level": 3,
+                                    "name": "商务工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144413,
+                                    "level": 3,
+                                    "name": "售前技术工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144414,
+                                    "level": 3,
+                                    "name": "售后技术工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11229,
+                    "level": 1,
+                    "name": "产品/项目/运营"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11210,
+                            "level": 2,
+                            "name": "产品"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11075,
+                                    "level": 3,
+                                    "name": "产品经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11076,
+                                    "level": 3,
+                                    "name": "移动产品经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11077,
+                                    "level": 3,
+                                    "name": "数据产品"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11078,
+                                    "level": 3,
+                                    "name": "增长产品"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11079,
+                                    "level": 3,
+                                    "name": "平台产品"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11080,
+                                    "level": 3,
+                                    "name": "产品总监"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11252,
+                                    "level": 3,
+                                    "name": "产品助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11253,
+                                    "level": 3,
+                                    "name": "硬件产品经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11254,
+                                    "level": 3,
+                                    "name": "网页产品经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143785,
+                                    "level": 3,
+                                    "name": "产品专员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11211,
+                            "level": 2,
+                            "name": "运营"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11081,
+                                    "level": 3,
+                                    "name": "运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11082,
+                                    "level": 3,
+                                    "name": "用户运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11083,
+                                    "level": 3,
+                                    "name": "数据运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11084,
+                                    "level": 3,
+                                    "name": "内容运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11085,
+                                    "level": 3,
+                                    "name": "活动运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11086,
+                                    "level": 3,
+                                    "name": "商家运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11087,
+                                    "level": 3,
+                                    "name": "品类运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11088,
+                                    "level": 3,
+                                    "name": "游戏运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11089,
+                                    "level": 3,
+                                    "name": "社区运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11090,
+                                    "level": 3,
+                                    "name": "策略运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11091,
+                                    "level": 3,
+                                    "name": "线下拓展运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11255,
+                                    "level": 3,
+                                    "name": "产品运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11256,
+                                    "level": 3,
+                                    "name": "新媒体运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11257,
+                                    "level": 3,
+                                    "name": "内容审核"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143786,
+                                    "level": 3,
+                                    "name": "运营助理/专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143787,
+                                    "level": 3,
+                                    "name": "直播运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143788,
+                                    "level": 3,
+                                    "name": "采编"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144421,
+                                    "level": 3,
+                                    "name": "视频运营"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11212,
+                            "level": 2,
+                            "name": "游戏策划"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11092,
+                                    "level": 3,
+                                    "name": "游戏策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11093,
+                                    "level": 3,
+                                    "name": "系统策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11094,
+                                    "level": 3,
+                                    "name": "文案策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11095,
+                                    "level": 3,
+                                    "name": "数值策划"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11260,
+                            "level": 2,
+                            "name": "项目"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11261,
+                                    "level": 3,
+                                    "name": "项目经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11262,
+                                    "level": 3,
+                                    "name": "项目专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144435,
+                                    "level": 3,
+                                    "name": "综合"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143843,
+                            "level": 2,
+                            "name": "用户研究"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143844,
+                                    "level": 3,
+                                    "name": "用户研究员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11230,
+                    "level": 1,
+                    "name": "金融"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11215,
+                            "level": 2,
+                            "name": "风控"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11112,
+                                    "level": 3,
+                                    "name": "风险管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11113,
+                                    "level": 3,
+                                    "name": "风控律师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11114,
+                                    "level": 3,
+                                    "name": "资信评估"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11115,
+                                    "level": 3,
+                                    "name": "合规稽查"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142696,
+                                    "level": 3,
+                                    "name": "风控"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11216,
+                            "level": 2,
+                            "name": "证券类"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11116,
+                                    "level": 3,
+                                    "name": "证券分析师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11117,
+                                    "level": 3,
+                                    "name": "证券"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11118,
+                                    "level": 3,
+                                    "name": "交易师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144415,
+                                    "level": 3,
+                                    "name": "投资银行业务"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11217,
+                            "level": 2,
+                            "name": "投融资"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11119,
+                                    "level": 3,
+                                    "name": "理财顾问"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11120,
+                                    "level": 3,
+                                    "name": "投融资"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11121,
+                                    "level": 3,
+                                    "name": "投资经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11122,
+                                    "level": 3,
+                                    "name": "行业研究"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11123,
+                                    "level": 3,
+                                    "name": "资产管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142959,
+                                    "level": 3,
+                                    "name": "量化分析"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144026,
+                                    "level": 3,
+                                    "name": "投资助理"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11218,
+                            "level": 2,
+                            "name": "银行"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11124,
+                                    "level": 3,
+                                    "name": "柜面服务"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11125,
+                                    "level": 3,
+                                    "name": "金融分析师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11126,
+                                    "level": 3,
+                                    "name": "商务渠道"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11127,
+                                    "level": 3,
+                                    "name": "大堂经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11128,
+                                    "level": 3,
+                                    "name": "银行客户经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11129,
+                                    "level": 3,
+                                    "name": "信贷管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142697,
+                                    "level": 3,
+                                    "name": "银行其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143908,
+                                    "level": 3,
+                                    "name": "银行管培生"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144034,
+                            "level": 2,
+                            "name": "保险"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144036,
+                                    "level": 3,
+                                    "name": "保险理赔"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11231,
+                    "level": 1,
+                    "name": "市场营销"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11219,
+                            "level": 2,
+                            "name": "市场/营销"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11130,
+                                    "level": 3,
+                                    "name": "营销"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11131,
+                                    "level": 3,
+                                    "name": "项目助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11132,
+                                    "level": 3,
+                                    "name": "市场客户经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11133,
+                                    "level": 3,
+                                    "name": "业务管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11134,
+                                    "level": 3,
+                                    "name": "市场"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11135,
+                                    "level": 3,
+                                    "name": "品牌运营工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11136,
+                                    "level": 3,
+                                    "name": "销售计划与分析"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11137,
+                                    "level": 3,
+                                    "name": "市场分析"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11138,
+                                    "level": 3,
+                                    "name": "品牌专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11139,
+                                    "level": 3,
+                                    "name": "数字营销专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11140,
+                                    "level": 3,
+                                    "name": "售后专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11141,
+                                    "level": 3,
+                                    "name": "产品规划专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11263,
+                                    "level": 3,
+                                    "name": "市场投放"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142698,
+                                    "level": 3,
+                                    "name": "售前产品"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143795,
+                                    "level": 3,
+                                    "name": "市场顾问"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143796,
+                                    "level": 3,
+                                    "name": "网络营销"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143797,
+                                    "level": 3,
+                                    "name": "APP推广"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143798,
+                                    "level": 3,
+                                    "name": "网络推广"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143799,
+                                    "level": 3,
+                                    "name": "市场推广"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143800,
+                                    "level": 3,
+                                    "name": "活动策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143801,
+                                    "level": 3,
+                                    "name": "活动执行"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144039,
+                                    "level": 3,
+                                    "name": "市场策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144040,
+                                    "level": 3,
+                                    "name": "海外市场"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144124,
+                                    "level": 3,
+                                    "name": "市场调研"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11225,
+                            "level": 2,
+                            "name": "销售类"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11169,
+                                    "level": 3,
+                                    "name": "销售"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11170,
+                                    "level": 3,
+                                    "name": "销售专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11171,
+                                    "level": 3,
+                                    "name": "销售客户经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11172,
+                                    "level": 3,
+                                    "name": "客户代表"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11173,
+                                    "level": 3,
+                                    "name": "渠道销售"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11174,
+                                    "level": 3,
+                                    "name": "代理商销售"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11175,
+                                    "level": 3,
+                                    "name": "电话销售"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11176,
+                                    "level": 3,
+                                    "name": "网络销售"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11177,
+                                    "level": 3,
+                                    "name": "销售工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143810,
+                                    "level": 3,
+                                    "name": "销售运营"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144060,
+                                    "level": 3,
+                                    "name": "外贸业务员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143802,
+                            "level": 2,
+                            "name": "公关媒介"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11142,
+                                    "level": 3,
+                                    "name": "媒介专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11143,
+                                    "level": 3,
+                                    "name": "品牌公关"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143803,
+                                    "level": 3,
+                                    "name": "媒介合作"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143804,
+                                    "level": 3,
+                                    "name": "广告创意设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143805,
+                                    "level": 3,
+                                    "name": "媒介策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143806,
+                                    "level": 3,
+                                    "name": "活动策划执行"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143807,
+                                    "level": 3,
+                                    "name": "广告文案"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143811,
+                            "level": 2,
+                            "name": "客服"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143812,
+                                    "level": 3,
+                                    "name": "电话客服"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143813,
+                                    "level": 3,
+                                    "name": "网络客服"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143814,
+                                    "level": 3,
+                                    "name": "客服专员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143909,
+                            "level": 2,
+                            "name": "商务"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11178,
+                                    "level": 3,
+                                    "name": "BD经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143808,
+                                    "level": 3,
+                                    "name": "商务经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143809,
+                                    "level": 3,
+                                    "name": "商务专员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144053,
+                            "level": 2,
+                            "name": "采编/写作/出版"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144056,
+                                    "level": 3,
+                                    "name": "编辑"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144419,
+                                    "level": 3,
+                                    "name": "文案编辑"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144068,
+                            "level": 2,
+                            "name": "影视媒体"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144077,
+                                    "level": 3,
+                                    "name": "导演/编导"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144078,
+                                    "level": 3,
+                                    "name": "摄影/摄像"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144079,
+                                    "level": 3,
+                                    "name": "视频编辑"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144082,
+                                    "level": 3,
+                                    "name": "后期制作"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144083,
+                                    "level": 3,
+                                    "name": "影视发行"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144086,
+                                    "level": 3,
+                                    "name": "演员/配音/模特"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11232,
+                    "level": 1,
+                    "name": "咨询/管理"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11220,
+                            "level": 2,
+                            "name": "管理"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11144,
+                                    "level": 3,
+                                    "name": "管理咨询"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143845,
+                                    "level": 3,
+                                    "name": "战略分析"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11221,
+                            "level": 2,
+                            "name": "管理培训生"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11145,
+                                    "level": 3,
+                                    "name": "管理培训生"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11146,
+                                    "level": 3,
+                                    "name": "IT管理培训生"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144110,
+                            "level": 2,
+                            "name": "咨询/调研"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144121,
+                                    "level": 3,
+                                    "name": "咨询项目管理"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11233,
+                    "level": 1,
+                    "name": "人事/行政/财务"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11214,
+                            "level": 2,
+                            "name": "财务审计"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11106,
+                                    "level": 3,
+                                    "name": "财务"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11107,
+                                    "level": 3,
+                                    "name": "审计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11108,
+                                    "level": 3,
+                                    "name": "税务"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11110,
+                                    "level": 3,
+                                    "name": "会计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11111,
+                                    "level": 3,
+                                    "name": "结算"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143816,
+                                    "level": 3,
+                                    "name": "出纳"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11222,
+                            "level": 2,
+                            "name": "人事"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11147,
+                                    "level": 3,
+                                    "name": "招聘专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11148,
+                                    "level": 3,
+                                    "name": "HRBP"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11149,
+                                    "level": 3,
+                                    "name": "人力资源主管"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11150,
+                                    "level": 3,
+                                    "name": "人力资源专员/助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11151,
+                                    "level": 3,
+                                    "name": "培训"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11152,
+                                    "level": 3,
+                                    "name": "薪资福利"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11153,
+                                    "level": 3,
+                                    "name": "绩效考核"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11154,
+                                    "level": 3,
+                                    "name": "人力资源经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11155,
+                                    "level": 3,
+                                    "name": "人力资源VP/CHO"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11156,
+                                    "level": 3,
+                                    "name": "人力资源总监"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11157,
+                                    "level": 3,
+                                    "name": "员工关系"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11158,
+                                    "level": 3,
+                                    "name": "组织发展"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142699,
+                                    "level": 3,
+                                    "name": "人力资源其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143815,
+                                    "level": 3,
+                                    "name": "企业文化"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11223,
+                            "level": 2,
+                            "name": "行政"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11159,
+                                    "level": 3,
+                                    "name": "行政专员/助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11160,
+                                    "level": 3,
+                                    "name": "前台"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11161,
+                                    "level": 3,
+                                    "name": "行政主管"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11162,
+                                    "level": 3,
+                                    "name": "经理助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11163,
+                                    "level": 3,
+                                    "name": "行政经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11164,
+                                    "level": 3,
+                                    "name": "后勤"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142805,
+                                    "level": 3,
+                                    "name": "采购"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11224,
+                            "level": 2,
+                            "name": "法务"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11109,
+                                    "level": 3,
+                                    "name": "法务"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11165,
+                                    "level": 3,
+                                    "name": "法律顾问"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11166,
+                                    "level": 3,
+                                    "name": "律师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11167,
+                                    "level": 3,
+                                    "name": "法务经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11168,
+                                    "level": 3,
+                                    "name": "法务专员/助理"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 11264,
+                    "level": 1,
+                    "name": "教育/科研"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11265,
+                            "level": 2,
+                            "name": "教育产品研发"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11267,
+                                    "level": 3,
+                                    "name": "课程设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11268,
+                                    "level": 3,
+                                    "name": "课程编辑"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11269,
+                                    "level": 3,
+                                    "name": "培训研究"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11270,
+                                    "level": 3,
+                                    "name": "培训师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11271,
+                                    "level": 3,
+                                    "name": "培训策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11272,
+                                    "level": 3,
+                                    "name": "其它教育产品研发"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 11266,
+                            "level": 2,
+                            "name": "教育"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11273,
+                                    "level": 3,
+                                    "name": "主讲教师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11274,
+                                    "level": 3,
+                                    "name": "辅导教师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143822,
+                                    "level": 3,
+                                    "name": "幼师/早教"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143823,
+                                    "level": 3,
+                                    "name": "中小学老师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143824,
+                                    "level": 3,
+                                    "name": "高等教育"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143825,
+                                    "level": 3,
+                                    "name": "it培训"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143826,
+                                    "level": 3,
+                                    "name": "职业培训"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143827,
+                                    "level": 3,
+                                    "name": "才艺特长培训"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143907,
+                                    "level": 3,
+                                    "name": "教师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144139,
+                                    "level": 3,
+                                    "name": "美术教师/老师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144143,
+                                    "level": 3,
+                                    "name": "体育教师/老师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144144,
+                                    "level": 3,
+                                    "name": "英语教师/老师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144416,
+                                    "level": 3,
+                                    "name": "播音主持教师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144417,
+                                    "level": 3,
+                                    "name": "音乐教师/老师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144426,
+                                    "level": 3,
+                                    "name": "舞蹈教师/老师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143743,
+                            "level": 2,
+                            "name": "翻译相关"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143744,
+                                    "level": 3,
+                                    "name": "英语翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143745,
+                                    "level": 3,
+                                    "name": "法语翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143746,
+                                    "level": 3,
+                                    "name": "德语翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143747,
+                                    "level": 3,
+                                    "name": "韩语翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143748,
+                                    "level": 3,
+                                    "name": "日语翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143749,
+                                    "level": 3,
+                                    "name": "西班牙语翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143817,
+                                    "level": 3,
+                                    "name": "小语种翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143906,
+                                    "level": 3,
+                                    "name": "翻译"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144418,
+                                    "level": 3,
+                                    "name": "俄语翻译"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143818,
+                            "level": 2,
+                            "name": "科研"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143819,
+                                    "level": 3,
+                                    "name": "科研人员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143820,
+                                    "level": 3,
+                                    "name": "科研助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143821,
+                                    "level": 3,
+                                    "name": "实验室研究员/技术员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 142960,
+                    "level": 1,
+                    "name": "供应链/物流"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 142961,
+                            "level": 2,
+                            "name": "供应链"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 142962,
+                                    "level": 3,
+                                    "name": "供应链管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142963,
+                                    "level": 3,
+                                    "name": "供应链专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142964,
+                                    "level": 3,
+                                    "name": "供应链其他"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143833,
+                            "level": 2,
+                            "name": "物流"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 142965,
+                                    "level": 3,
+                                    "name": "物流仓储项目经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142966,
+                                    "level": 3,
+                                    "name": "物流经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142967,
+                                    "level": 3,
+                                    "name": "物流专员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142968,
+                                    "level": 3,
+                                    "name": "物流其它"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 143750,
+                    "level": 1,
+                    "name": "视觉/交互/设计"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 11213,
+                            "level": 2,
+                            "name": "交互/设计"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11096,
+                                    "level": 3,
+                                    "name": "设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11097,
+                                    "level": 3,
+                                    "name": "UI设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11098,
+                                    "level": 3,
+                                    "name": "交互设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11099,
+                                    "level": 3,
+                                    "name": "3D设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11100,
+                                    "level": 3,
+                                    "name": "广告设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11101,
+                                    "level": 3,
+                                    "name": "多媒体设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11102,
+                                    "level": 3,
+                                    "name": "原画师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11105,
+                                    "level": 3,
+                                    "name": "插画师/漫画师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11259,
+                                    "level": 3,
+                                    "name": "设计其它"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 142746,
+                                    "level": 3,
+                                    "name": "用户体验设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143828,
+                                    "level": 3,
+                                    "name": "平面设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143829,
+                                    "level": 3,
+                                    "name": "网页设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143830,
+                                    "level": 3,
+                                    "name": "美工"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143831,
+                                    "level": 3,
+                                    "name": "设计师助理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144420,
+                                    "level": 3,
+                                    "name": "视觉设计师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143789,
+                            "level": 2,
+                            "name": "动画/特效"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11104,
+                                    "level": 3,
+                                    "name": "动画设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 11258,
+                                    "level": 3,
+                                    "name": "技术美术"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143079,
+                                    "level": 3,
+                                    "name": "音乐特效"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143790,
+                            "level": 2,
+                            "name": "工业类设计"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 11103,
+                                    "level": 3,
+                                    "name": "CAD设计/制图"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143791,
+                                    "level": 3,
+                                    "name": "家具/工装设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143792,
+                                    "level": 3,
+                                    "name": "包装设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143832,
+                                    "level": 3,
+                                    "name": "工业设计"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144173,
+                            "level": 2,
+                            "name": "游戏设计"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144177,
+                                    "level": 3,
+                                    "name": "游戏角色"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 143848,
+                    "level": 1,
+                    "name": "房地产/建筑"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 143849,
+                            "level": 2,
+                            "name": "房地产"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143851,
+                                    "level": 3,
+                                    "name": "房地产规划开发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143852,
+                                    "level": 3,
+                                    "name": "房地产策划"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143853,
+                                    "level": 3,
+                                    "name": "地产项目管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143854,
+                                    "level": 3,
+                                    "name": "地产招投标"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143855,
+                                    "level": 3,
+                                    "name": "房产评估师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143856,
+                                    "level": 3,
+                                    "name": "置业顾问"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143857,
+                                    "level": 3,
+                                    "name": "地产中介"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143858,
+                                    "level": 3,
+                                    "name": "物业经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143859,
+                                    "level": 3,
+                                    "name": "物业销售"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 143850,
+                            "level": 2,
+                            "name": "设计装修与市政建设"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143860,
+                                    "level": 3,
+                                    "name": "市政建设"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143861,
+                                    "level": 3,
+                                    "name": "建筑工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143862,
+                                    "level": 3,
+                                    "name": "建筑设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143863,
+                                    "level": 3,
+                                    "name": "土木/土建工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143864,
+                                    "level": 3,
+                                    "name": "室内设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143865,
+                                    "level": 3,
+                                    "name": "园林景观设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143866,
+                                    "level": 3,
+                                    "name": "城市规划设计"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143867,
+                                    "level": 3,
+                                    "name": "工程造价"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143868,
+                                    "level": 3,
+                                    "name": "工程预算"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143869,
+                                    "level": 3,
+                                    "name": "建筑施工现场管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143870,
+                                    "level": 3,
+                                    "name": "资料员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143871,
+                                    "level": 3,
+                                    "name": "给排水工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143872,
+                                    "level": 3,
+                                    "name": "暖通工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143873,
+                                    "level": 3,
+                                    "name": "幕墙工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143874,
+                                    "level": 3,
+                                    "name": "软装设计师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143875,
+                                    "level": 3,
+                                    "name": "施工员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143876,
+                                    "level": 3,
+                                    "name": "测绘工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143877,
+                                    "level": 3,
+                                    "name": "材料员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143878,
+                                    "level": 3,
+                                    "name": "BIM工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143879,
+                                    "level": 3,
+                                    "name": "消防工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143880,
+                                    "level": 3,
+                                    "name": "施工安全员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143881,
+                                    "level": 3,
+                                    "name": "建筑电气工程师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144422,
+                                    "level": 3,
+                                    "name": "工程监理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144427,
+                                    "level": 3,
+                                    "name": "EHS工程师"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 143882,
+                    "level": 1,
+                    "name": "生物医疗"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 143883,
+                            "level": 2,
+                            "name": "生物制药"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 143884,
+                                    "level": 3,
+                                    "name": "生物制药岗"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143885,
+                                    "level": 3,
+                                    "name": "生物工程"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143886,
+                                    "level": 3,
+                                    "name": "临床研究"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143887,
+                                    "level": 3,
+                                    "name": "医疗器械生产/质量管理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143888,
+                                    "level": 3,
+                                    "name": "医药销售"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143889,
+                                    "level": 3,
+                                    "name": "临床数据分析"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143890,
+                                    "level": 3,
+                                    "name": "医药项目经理"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143891,
+                                    "level": 3,
+                                    "name": "药品注册"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143892,
+                                    "level": 3,
+                                    "name": "药品生产"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143893,
+                                    "level": 3,
+                                    "name": "药品研发"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 143894,
+                                    "level": 3,
+                                    "name": "药品销售/推广"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144424,
+                                    "level": 3,
+                                    "name": "生物学研究人员"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144425,
+                                    "level": 3,
+                                    "name": "医疗器械研发"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 144193,
+                    "level": 1,
+                    "name": "医护健康"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 144194,
+                            "level": 2,
+                            "name": "护士/护理"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144196,
+                                    "level": 3,
+                                    "name": "护士"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144198,
+                            "level": 2,
+                            "name": "医生/医技"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144203,
+                                    "level": 3,
+                                    "name": "医生助理"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144214,
+                            "level": 2,
+                            "name": "医院/临床医疗/护理"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144221,
+                                    "level": 3,
+                                    "name": "检验科医师"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144423,
+                                    "level": 3,
+                                    "name": "医学编辑"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 144233,
+                    "level": 1,
+                    "name": "旅游/服务业"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 144234,
+                            "level": 2,
+                            "name": "旅游服务"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144235,
+                                    "level": 3,
+                                    "name": "计调"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 144329,
+                    "level": 1,
+                    "name": "其他"
+                },
+                "subJobs": [
+                    {
+                        "jobInfo": {
+                            "id": 144330,
+                            "level": 2,
+                            "name": "贸易"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144332,
+                                    "level": 3,
+                                    "name": "贸易跟单"
+                                },
+                                "subJobs": []
+                            },
+                            {
+                                "jobInfo": {
+                                    "id": 144334,
+                                    "level": 3,
+                                    "name": "单证员"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    },
+                    {
+                        "jobInfo": {
+                            "id": 144335,
+                            "level": 2,
+                            "name": "服装/纺织/皮革"
+                        },
+                        "subJobs": [
+                            {
+                                "jobInfo": {
+                                    "id": 144336,
+                                    "level": 3,
+                                    "name": "服装/纺织设计"
+                                },
+                                "subJobs": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "jobInfo": {
+                    "id": 144436,
+                    "level": 1,
+                    "name": "考研"
+                },
+                "subJobs": []
+            }
+        ]
+    }
+}
