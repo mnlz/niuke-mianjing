@@ -7,6 +7,7 @@ CURRENT_DIR="${APP_DIR}/current"
 RELEASE_SRC="/tmp/niuke-deploy"
 WEB_PORT="${WEB_PORT:-8080}"
 API_PORT="${API_PORT:-8000}"
+NIUKE_SERVER_NAME="${NIUKE_SERVER_NAME:-mnls.cloud}"
 
 dnf install -y python3 python3-pip nginx mariadb-server curl policycoreutils-python-utils >/dev/null
 systemctl enable --now mariadb nginx >/dev/null
@@ -137,7 +138,49 @@ SERVICE
 cat >/etc/nginx/conf.d/niuke-mianjing.conf <<NGINX
 server {
     listen ${WEB_PORT};
-    server_name 120.26.3.11;
+    server_name ${NIUKE_SERVER_NAME} 120.26.3.11;
+    root ${CURRENT_DIR}/frontend-dist;
+    index index.html;
+
+    client_max_body_size 20m;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location = /health {
+        proxy_pass http://127.0.0.1:${API_PORT}/health;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /api/ws/ {
+        proxy_pass http://127.0.0.1:${API_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_read_timeout 3600s;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:${API_PORT};
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 300s;
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript;
+}
+
+server {
+    listen 80;
+    server_name ${NIUKE_SERVER_NAME};
     root ${CURRENT_DIR}/frontend-dist;
     index index.html;
 

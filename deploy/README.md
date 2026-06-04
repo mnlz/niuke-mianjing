@@ -40,6 +40,10 @@
 
 `http://120.26.3.11:8080`
 
+如果域名 `mnls.cloud` 已解析到服务器，部署脚本也会配置：
+
+`http://mnls.cloud/`
+
 后端服务：
 
 `systemctl status niuke-mianjing`
