@@ -105,7 +105,7 @@ async def stream_question_analysis_article(
                     "records": analysis["records"],
                 }
             )
-            for event in wechat_service.stream_prompt_html(prompt, analysis["title"]):
+            for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "trend_analysis"):
                 yield sse_event(event)
         except Exception as exc:
             yield sse_event({"type": "error", "message": str(exc)})
@@ -152,7 +152,7 @@ async def stream_quick_checklist_article(
                     "records": analysis["records"],
                 }
             )
-            for event in wechat_service.stream_prompt_html(prompt, analysis["title"]):
+            for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "quick_checklist"):
                 yield sse_event(event)
         except Exception as exc:
             yield sse_event({"type": "error", "message": str(exc)})

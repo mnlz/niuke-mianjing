@@ -18,6 +18,7 @@ from PIL import Image, ImageDraw
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.wechat_article_repo import WeChatArticleRepository
+from niuke_mianjing_backend.services.wechat_formatter import render_markdown_as_raphael_html, render_raphael_wechat_html
 
 
 WECHAT_API_BASE = "https://api.weixin.qq.com/cgi-bin"
@@ -52,10 +53,10 @@ class WeChatService:
             extensions=["extra", "tables", "fenced_code", "nl2br", "sane_lists"],
             output_format="html5",
         )
-        article_html = self._inline_wechat_styles(title, body_html)
+        article_html = render_markdown_as_raphael_html(title, body_html, "manual_rewrite")
         return {
             "title": title,
-            "html": f"<!-- WECHAT_ARTICLE_TITLE: {title} -->\n{article_html}",
+            "html": article_html,
             "metadata": metadata,
         }
 
@@ -77,7 +78,7 @@ class WeChatService:
 
         article_title = title or article.get("title") or fallback
         article_digest = digest or article.get("digest") or self._plain_text(article.get("html", ""))[:100]
-        html = self._ensure_wechat_html(article_title, article.get("html", ""))
+        html = self._ensure_wechat_html(article_title, article.get("html", ""), style)
         image_prompt = article.get("cover_prompt") or self._build_cover_prompt(article_title, markdown_content, style)
         cover_base64 = self._generate_cover_with_openai(image_prompt)
 
@@ -112,7 +113,7 @@ class WeChatService:
         status: str = "edited",
     ) -> Dict[str, Any]:
         self._ensure_openai_configured()
-        final_html = self._ensure_wechat_html(title, html)
+        final_html = self._ensure_wechat_html(title, html, style)
         prompt = cover_prompt or self._build_cover_prompt(title, markdown_content, style)
         final_cover_base64 = self._normalize_base64_image(cover_base64) if cover_base64 else self._generate_cover_with_openai(prompt)
         final_cover_mime = cover_mime or "image/png"
@@ -121,6 +122,7 @@ class WeChatService:
             "image_model": settings.OPENAI_IMAGE_MODEL,
             "style": style,
             "flow": "stream-edit-save",
+            "formatter": "raphael_python",
             "cover_source": "custom_upload" if cover_base64 else "ai_generated",
         }
         article_id = await self.article_repo.create_article(
@@ -144,9 +146,9 @@ class WeChatService:
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         article_title = title or fallback
         prompt = self._build_stream_html_prompt(markdown_content, article_title, style)
-        yield from self.stream_prompt_html(prompt, article_title)
+        yield from self.stream_prompt_html(prompt, article_title, style)
 
-    def stream_prompt_html(self, prompt: str, article_title: str) -> Generator[Dict[str, Any], None, None]:
+    def stream_prompt_html(self, prompt: str, article_title: str, content_type: str = "single_interpretation") -> Generator[Dict[str, Any], None, None]:
         payload = {
             "model": settings.OPENAI_TEXT_MODEL,
             "stream": True,
@@ -194,7 +196,7 @@ class WeChatService:
             full_text += delta
             yield {"type": "delta", "delta": delta}
 
-        html = self._ensure_wechat_html(article_title, self._clean_html_text(full_text))
+        html = self._ensure_wechat_html(article_title, self._clean_html_text(full_text), content_type)
         yield {"type": "done", "title": article_title, "html": html}
 
     async def build_question_analysis(
@@ -838,17 +840,12 @@ class WeChatService:
 </table>
 """.strip()
 
-    def _ensure_wechat_html(self, title: str, html: str) -> str:
+    def _ensure_wechat_html(self, title: str, html: str, content_type: str = "single_interpretation") -> str:
         cleaned = self._clean_html_text(html)
         if "<section" not in cleaned and "<p" not in cleaned:
             cleaned = markdown.markdown(cleaned, extensions=["extra", "tables", "fenced_code", "nl2br", "sane_lists"])
-        if self._is_question_analysis_title(title) and "rgb(15, 76, 129)" not in cleaned:
-            cleaned = self._inline_report_styles(title, cleaned)
-        elif "style=" not in cleaned:
-            cleaned = self._inline_wechat_styles(title, cleaned)
-        if "WECHAT_ARTICLE_TITLE" not in cleaned:
-            cleaned = f"<!-- WECHAT_ARTICLE_TITLE: {title} -->\n{cleaned}"
-        return cleaned
+        resolved_type = "trend_analysis" if self._is_question_analysis_title(title) else content_type
+        return render_raphael_wechat_html(title, cleaned, resolved_type)
 
     @staticmethod
     def _is_question_analysis_title(title: str) -> bool:
