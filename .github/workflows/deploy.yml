@@ -54,7 +54,7 @@ jobs:
           rm -rf deploy-package niuke-mianjing-release.tar.gz
           mkdir -p deploy-package/frontend-dist deploy-package/deploy
           cp -r niuke_mianjing_backend deploy-package/
-          cp main.py requirements.txt deploy-package/
+          cp main.py requirements.txt job.json deploy-package/
           cp -r niuke-mianjing-frontend/dist/. deploy-package/frontend-dist/
           cp deploy/remote_deploy.sh deploy-package/deploy/
           printf '%s\n' "$SERVER_ENV" > deploy-package/.env
