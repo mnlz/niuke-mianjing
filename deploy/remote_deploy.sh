@@ -38,6 +38,27 @@ if [ -z "$DB_PASSWORD" ]; then
   exit 1
 fi
 
+if [ "$DB_USER" = "root" ]; then
+  DB_USER="niuke_app"
+  python3 - <<'PY'
+from pathlib import Path
+
+env_path = Path("/opt/niuke-mianjing/current.new/.env")
+lines = env_path.read_text().splitlines()
+output = []
+seen = False
+for line in lines:
+    if line.startswith("DB_USER="):
+        output.append("DB_USER=niuke_app")
+        seen = True
+    else:
+        output.append(line)
+if not seen:
+    output.append("DB_USER=niuke_app")
+env_path.write_text("\n".join(output) + "\n")
+PY
+fi
+
 mysql -uroot <<SQL
 CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET ${DB_CHARSET} COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASSWORD}';
@@ -105,7 +126,7 @@ After=network.target mariadb.service
 Type=simple
 WorkingDirectory=${CURRENT_DIR}
 EnvironmentFile=${CURRENT_DIR}/.env
-ExecStart=/bin/bash -lc 'source ${CURRENT_DIR}/.env && exec ${CURRENT_DIR}/.venv/bin/uvicorn niuke_mianjing_backend.api.app:app --host 127.0.0.1 --port \${API_PORT:-8000}'
+ExecStart=/bin/bash -lc 'source ${CURRENT_DIR}/.env && exec ${CURRENT_DIR}/.venv/bin/python -m uvicorn niuke_mianjing_backend.api.app:app --host 127.0.0.1 --port \${API_PORT:-8000}'
 Restart=always
 RestartSec=5
 
