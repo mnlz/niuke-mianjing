@@ -18,7 +18,11 @@ from PIL import Image, ImageDraw
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.wechat_article_repo import WeChatArticleRepository
-from niuke_mianjing_backend.services.wechat_formatter import render_markdown_as_raphael_html, render_raphael_wechat_html
+from niuke_mianjing_backend.services.wechat_formatter import (
+    get_raphael_theme_groups,
+    render_markdown_as_raphael_html,
+    render_raphael_wechat_html,
+)
 
 
 WECHAT_API_BASE = "https://api.weixin.qq.com/cgi-bin"
@@ -33,6 +37,9 @@ class WeChatService:
     async def init_table(self):
         await self.article_repo.init_table()
 
+    def get_wechat_theme_groups(self) -> List[Dict[str, Any]]:
+        return get_raphael_theme_groups()
+
     def parse_markdown(self, content: str, fallback_title: str = "未命名文章") -> Tuple[Dict, str, str]:
         metadata: Dict[str, object] = {}
         body = content.strip()
@@ -46,14 +53,19 @@ class WeChatService:
         title = str(metadata.get("title") or "").strip() or self._extract_first_heading(body) or fallback_title
         return metadata, body, title
 
-    def render_html(self, markdown_content: str, fallback_title: str = "未命名文章") -> Dict[str, Any]:
+    def render_html(
+        self,
+        markdown_content: str,
+        fallback_title: str = "未命名文章",
+        wechat_theme: Optional[str] = None,
+    ) -> Dict[str, Any]:
         metadata, body, title = self.parse_markdown(markdown_content, fallback_title)
         body_html = markdown.markdown(
             body,
             extensions=["extra", "tables", "fenced_code", "nl2br", "sane_lists"],
             output_format="html5",
         )
-        article_html = render_markdown_as_raphael_html(title, body_html, "manual_rewrite")
+        article_html = render_markdown_as_raphael_html(title, body_html, "manual_rewrite", wechat_theme)
         return {
             "title": title,
             "html": article_html,
@@ -69,6 +81,7 @@ class WeChatService:
         content_source_url: Optional[str] = None,
         source_record_id: Optional[int] = None,
         style: str = "tech",
+        wechat_theme: Optional[str] = None,
     ) -> Dict[str, Any]:
         self._ensure_openai_configured()
 
@@ -78,7 +91,7 @@ class WeChatService:
 
         article_title = title or article.get("title") or fallback
         article_digest = digest or article.get("digest") or self._plain_text(article.get("html", ""))[:100]
-        html = self._ensure_wechat_html(article_title, article.get("html", ""), style)
+        html = self._ensure_wechat_html(article_title, article.get("html", ""), style, wechat_theme)
         image_prompt = article.get("cover_prompt") or self._build_cover_prompt(article_title, markdown_content, style)
         cover_base64 = self._generate_cover_with_openai(image_prompt)
 
@@ -91,6 +104,7 @@ class WeChatService:
             content_source_url=content_source_url,
             source_record_id=source_record_id,
             style=style,
+            wechat_theme=wechat_theme,
             cover_prompt=image_prompt,
             cover_base64=cover_base64,
             cover_mime="image/png",
@@ -107,13 +121,14 @@ class WeChatService:
         content_source_url: Optional[str],
         source_record_id: Optional[int],
         style: str,
+        wechat_theme: Optional[str] = None,
         cover_prompt: Optional[str] = None,
         cover_base64: Optional[str] = None,
         cover_mime: Optional[str] = None,
         status: str = "edited",
     ) -> Dict[str, Any]:
         self._ensure_openai_configured()
-        final_html = self._ensure_wechat_html(title, html, style)
+        final_html = self._ensure_wechat_html(title, html, style, wechat_theme)
         prompt = cover_prompt or self._build_cover_prompt(title, markdown_content, style)
         final_cover_base64 = self._normalize_base64_image(cover_base64) if cover_base64 else self._generate_cover_with_openai(prompt)
         final_cover_mime = cover_mime or "image/png"
@@ -121,6 +136,7 @@ class WeChatService:
             "text_model": settings.OPENAI_TEXT_MODEL,
             "image_model": settings.OPENAI_IMAGE_MODEL,
             "style": style,
+            "wechat_theme": wechat_theme or "auto",
             "flow": "stream-edit-save",
             "formatter": "raphael_python",
             "cover_source": "custom_upload" if cover_base64 else "ai_generated",
@@ -141,14 +157,26 @@ class WeChatService:
         )
         return await self.article_repo.get_article(article_id)
 
-    def stream_wechat_html(self, markdown_content: str, title: Optional[str], style: str) -> Generator[Dict[str, Any], None, None]:
+    def stream_wechat_html(
+        self,
+        markdown_content: str,
+        title: Optional[str],
+        style: str,
+        wechat_theme: Optional[str] = None,
+    ) -> Generator[Dict[str, Any], None, None]:
         self._ensure_openai_configured()
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         article_title = title or fallback
         prompt = self._build_stream_html_prompt(markdown_content, article_title, style)
-        yield from self.stream_prompt_html(prompt, article_title, style)
+        yield from self.stream_prompt_html(prompt, article_title, style, wechat_theme)
 
-    def stream_prompt_html(self, prompt: str, article_title: str, content_type: str = "single_interpretation") -> Generator[Dict[str, Any], None, None]:
+    def stream_prompt_html(
+        self,
+        prompt: str,
+        article_title: str,
+        content_type: str = "single_interpretation",
+        wechat_theme: Optional[str] = None,
+    ) -> Generator[Dict[str, Any], None, None]:
         payload = {
             "model": settings.OPENAI_TEXT_MODEL,
             "stream": True,
@@ -196,7 +224,7 @@ class WeChatService:
             full_text += delta
             yield {"type": "delta", "delta": delta}
 
-        html = self._ensure_wechat_html(article_title, self._clean_html_text(full_text), content_type)
+        html = self._ensure_wechat_html(article_title, self._clean_html_text(full_text), content_type, wechat_theme)
         yield {"type": "done", "title": article_title, "html": html}
 
     async def build_question_analysis(
@@ -491,8 +519,9 @@ class WeChatService:
         digest: Optional[str] = None,
         content_source_url: Optional[str] = None,
         cover_theme: str = "auto",
+        wechat_theme: Optional[str] = None,
     ) -> Dict:
-        rendered = self.render_html(markdown_content, title or "未命名文章")
+        rendered = self.render_html(markdown_content, title or "未命名文章", wechat_theme)
         article_title = title or rendered["title"]
         token = self.get_token()
 
@@ -840,12 +869,18 @@ class WeChatService:
 </table>
 """.strip()
 
-    def _ensure_wechat_html(self, title: str, html: str, content_type: str = "single_interpretation") -> str:
+    def _ensure_wechat_html(
+        self,
+        title: str,
+        html: str,
+        content_type: str = "single_interpretation",
+        wechat_theme: Optional[str] = None,
+    ) -> str:
         cleaned = self._clean_html_text(html)
         if "<section" not in cleaned and "<p" not in cleaned:
             cleaned = markdown.markdown(cleaned, extensions=["extra", "tables", "fenced_code", "nl2br", "sane_lists"])
         resolved_type = "trend_analysis" if self._is_question_analysis_title(title) else content_type
-        return render_raphael_wechat_html(title, cleaned, resolved_type)
+        return render_raphael_wechat_html(title, cleaned, resolved_type, wechat_theme)
 
     @staticmethod
     def _is_question_analysis_title(title: str) -> bool:

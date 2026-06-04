@@ -1,11 +1,15 @@
+import json
 import re
+from functools import lru_cache
 from html import escape
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Optional
 
 from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 
 
 BASE_FONT = "-apple-system-font,BlinkMacSystemFont,'Helvetica Neue','PingFang SC','Hiragino Sans GB','Microsoft YaHei',Arial,sans-serif"
+THEME_RESOURCE_PATH = Path(__file__).resolve().parents[1] / "resources" / "raphael_themes.json"
 
 
 RAPHAEL_THEMES: Dict[str, Dict[str, str]] = {
@@ -91,8 +95,43 @@ CONTENT_THEME_MAP = {
 }
 
 
-def render_raphael_wechat_html(title: str, html: str, content_type: str = "single_interpretation") -> str:
-    theme = RAPHAEL_THEMES.get(CONTENT_THEME_MAP.get(content_type, "editorial_blue"), RAPHAEL_THEMES["editorial_blue"])
+def get_raphael_theme_groups() -> list:
+    payload = _load_raphael_theme_payload()
+    if not payload:
+        return [
+            {
+                "label": "内置",
+                "themes": [
+                    {"id": "editorial_blue", "name": "编辑蓝", "description": "清爽的大厂公众号排版"},
+                    {"id": "knowledge_focus", "name": "知识绿", "description": "适合知识点精讲和速查清单"},
+                    {"id": "report_blue", "name": "报告蓝", "description": "适合趋势分析和数据报告"},
+                ],
+            }
+        ]
+    return [
+        {
+            "label": group.get("label", "Raphael"),
+            "themes": [
+                {
+                    "id": theme.get("id"),
+                    "name": theme.get("name"),
+                    "description": theme.get("description", ""),
+                }
+                for theme in group.get("themes", [])
+                if theme.get("id") and theme.get("name")
+            ],
+        }
+        for group in payload.get("groups", [])
+    ]
+
+
+def render_raphael_wechat_html(
+    title: str,
+    html: str,
+    content_type: str = "single_interpretation",
+    theme_id: Optional[str] = None,
+) -> str:
+    theme = _resolve_theme(content_type, theme_id)
     soup = BeautifulSoup(html or "", "html.parser")
     _remove_unsafe_nodes(soup)
 
@@ -115,8 +154,66 @@ def render_raphael_wechat_html(title: str, html: str, content_type: str = "singl
     return f"<!-- WECHAT_ARTICLE_TITLE: {escape(title)} -->\n{section}"
 
 
-def render_markdown_as_raphael_html(title: str, body_html: str, content_type: str = "single_interpretation") -> str:
-    return render_raphael_wechat_html(title, body_html, content_type)
+def render_markdown_as_raphael_html(
+    title: str,
+    body_html: str,
+    content_type: str = "single_interpretation",
+    theme_id: Optional[str] = None,
+) -> str:
+    return render_raphael_wechat_html(title, body_html, content_type, theme_id)
+
+
+@lru_cache(maxsize=1)
+def _load_raphael_theme_payload() -> dict:
+    if not THEME_RESOURCE_PATH.exists():
+        return {}
+    return json.loads(THEME_RESOURCE_PATH.read_text(encoding="utf-8"))
+
+
+def _resolve_theme(content_type: str, theme_id: Optional[str] = None) -> Dict[str, str]:
+    if theme_id and theme_id != "auto":
+        if theme_id in RAPHAEL_THEMES:
+            return RAPHAEL_THEMES[theme_id]
+        external_theme = _find_external_theme(theme_id)
+        if external_theme:
+            return _normalize_external_theme(external_theme["styles"], content_type)
+    default_theme_id = CONTENT_THEME_MAP.get(content_type, "editorial_blue")
+    return RAPHAEL_THEMES.get(default_theme_id, RAPHAEL_THEMES["editorial_blue"])
+
+
+def _find_external_theme(theme_id: str) -> Optional[dict]:
+    payload = _load_raphael_theme_payload()
+    for group in payload.get("groups", []):
+        for theme in group.get("themes", []):
+            if theme.get("id") == theme_id:
+                return theme
+    return None
+
+
+def _normalize_external_theme(styles: Dict[str, str], content_type: str) -> Dict[str, str]:
+    fallback_id = CONTENT_THEME_MAP.get(content_type, "editorial_blue")
+    fallback = RAPHAEL_THEMES.get(fallback_id, RAPHAEL_THEMES["editorial_blue"])
+    theme = {**fallback, **styles}
+    theme["container"] = _merge_style(
+        theme.get("container", fallback["container"]),
+        "box-sizing:border-box;max-width:100%;word-break:break-word;",
+    )
+    theme["eyebrow"] = _merge_style(
+        "box-sizing:border-box;margin:0 0 12px;font-size:13px;line-height:1.6;font-weight:600;letter-spacing:0.04em;",
+        _extract_accent_style(theme),
+    )
+    for key, value in list(theme.items()):
+        if key != "eyebrow":
+            theme[key] = _merge_style("box-sizing:border-box;", value)
+    return theme
+
+
+def _extract_accent_style(theme: Dict[str, str]) -> str:
+    for key in ("h2", "h1", "strong", "a"):
+        match = re.search(r"color:\s*([^;!]+)", theme.get(key, ""))
+        if match:
+            return f"color:{match.group(1).strip()};"
+    return "color:#2f6feb;"
 
 
 def _remove_unsafe_nodes(soup: BeautifulSoup) -> None:

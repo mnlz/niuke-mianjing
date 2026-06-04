@@ -41,8 +41,24 @@ async def preview_wechat_html(
 ):
     if not request.markdown.strip():
         raise BadRequestException("Markdown 内容不能为空")
-    rendered = await run_in_threadpool(wechat_service.render_html, request.markdown, request.title or "未命名文章")
+    rendered = await run_in_threadpool(
+        wechat_service.render_html,
+        request.markdown,
+        request.title or "未命名文章",
+        request.wechat_theme,
+    )
     return ApiResponse(message="转换成功", data=rendered)
+
+
+@router.get(
+    "/themes",
+    summary="公众号排版主题列表",
+    description="返回已集成的 Raphael Publish 公众号排版主题。",
+)
+async def list_wechat_themes(
+    wechat_service: WeChatService = Depends(get_wechat_service),
+):
+    return ApiResponse(message="获取成功", data=wechat_service.get_wechat_theme_groups())
 
 
 @router.post(
@@ -59,7 +75,12 @@ async def stream_wechat_article(
 
     def event_generator():
         try:
-            for event in wechat_service.stream_wechat_html(request.markdown, request.title, request.style):
+            for event in wechat_service.stream_wechat_html(
+                request.markdown,
+                request.title,
+                request.style,
+                request.wechat_theme,
+            ):
                 yield sse_event(event)
         except Exception as exc:
             yield sse_event({"type": "error", "message": str(exc)})
@@ -105,7 +126,7 @@ async def stream_question_analysis_article(
                     "records": analysis["records"],
                 }
             )
-            for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "trend_analysis"):
+            for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "trend_analysis", request.wechat_theme):
                 yield sse_event(event)
         except Exception as exc:
             yield sse_event({"type": "error", "message": str(exc)})
@@ -152,7 +173,7 @@ async def stream_quick_checklist_article(
                     "records": analysis["records"],
                 }
             )
-            for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "quick_checklist"):
+            for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "quick_checklist", request.wechat_theme):
                 yield sse_event(event)
         except Exception as exc:
             yield sse_event({"type": "error", "message": str(exc)})
@@ -186,6 +207,7 @@ async def save_wechat_article(
             content_source_url=request.content_source_url,
             source_record_id=request.source_record_id,
             style=request.style,
+            wechat_theme=request.wechat_theme,
             cover_prompt=request.cover_prompt,
             cover_base64=request.cover_base64,
             cover_mime=request.cover_mime,
@@ -216,6 +238,7 @@ async def ai_generate_wechat_article(
             content_source_url=request.content_source_url,
             source_record_id=request.source_record_id,
             style=request.style,
+            wechat_theme=request.wechat_theme,
         )
         return ApiResponse(message="AI 公众号稿件生成成功", data=result)
     except ValueError as exc:
@@ -290,6 +313,7 @@ async def create_wechat_draft(
             digest=request.digest,
             content_source_url=request.content_source_url,
             cover_theme=request.cover_theme,
+            wechat_theme=request.wechat_theme,
         )
         return ApiResponse(message="草稿创建成功，请登录公众号后台检查后再群发", data=result)
     except ValueError as exc:

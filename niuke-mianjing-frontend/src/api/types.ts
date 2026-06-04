@@ -135,12 +135,24 @@ export interface CardDraft {
 export interface WeChatPreviewRequest {
   markdown: string
   title?: string
+  wechat_theme?: string
 }
 
 export interface WeChatPreviewData {
   title: string
   html: string
   metadata: Record<string, unknown>
+}
+
+export interface WeChatThemeItem {
+  id: string
+  name: string
+  description?: string
+}
+
+export interface WeChatThemeGroup {
+  label: string
+  themes: WeChatThemeItem[]
 }
 
 export interface WeChatDraftRequest {
@@ -150,6 +162,7 @@ export interface WeChatDraftRequest {
   digest?: string
   content_source_url?: string
   cover_theme?: 'auto' | 'programming' | 'ai' | 'tech'
+  wechat_theme?: string
 }
 
 export interface WeChatDraftData {
@@ -173,6 +186,7 @@ export interface WeChatAIGenerateRequest {
     | 'manual_rewrite'
     | 'quick_checklist'
     | 'interviewer_chain'
+  wechat_theme?: string
 }
 
 export interface WeChatAISaveRequest extends WeChatAIGenerateRequest {
@@ -209,6 +223,7 @@ export interface WeChatQuestionAnalysisRequest {
   post: string
   days: number
   limit?: number
+  wechat_theme?: string
 }
 
 export interface WeChatQuestionAnalysisData {

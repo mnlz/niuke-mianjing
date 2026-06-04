@@ -5,7 +5,7 @@ import { BarChartOutlined, DeleteOutlined, DatabaseOutlined, SendOutlined, Thund
 import { useLocation } from 'react-router-dom'
 import { logApi } from '@/api'
 import { wechatApi } from '@/api/wechat'
-import type { FilterOptions, NiukeRecord, WeChatArticleData, WeChatQuestionAnalysisData } from '@/api/types'
+import type { FilterOptions, NiukeRecord, WeChatArticleData, WeChatQuestionAnalysisData, WeChatThemeGroup } from '@/api/types'
 import { buildRecordMarkdown } from '@/utils/markdown'
 
 const { Text, Title } = Typography
@@ -145,6 +145,7 @@ const Wechat: React.FC = () => {
   const [checklistDays, setChecklistDays] = useState(30)
   const [analysisData, setAnalysisData] = useState<WeChatQuestionAnalysisData | null>(null)
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ posts: [], companies: [] })
+  const [wechatThemeGroups, setWechatThemeGroups] = useState<WeChatThemeGroup[]>([])
   const [article, setArticle] = useState<WeChatArticleData | null>(null)
 
   const postOptions = useMemo(
@@ -158,6 +159,20 @@ const Wechat: React.FC = () => {
       ...filterOptions.companies.map((company) => ({ label: company, value: company })),
     ],
     [filterOptions.companies],
+  )
+
+  const wechatThemeOptions = useMemo(
+    () => [
+      { label: '自动匹配内容类型', value: 'auto' },
+      ...wechatThemeGroups.map((group) => ({
+        label: group.label,
+        options: group.themes.map((theme) => ({
+          label: `${theme.name}（${theme.id}）`,
+          value: theme.id,
+        })),
+      })),
+    ],
+    [wechatThemeGroups],
   )
 
   const activeTypeGuide = contentTypeGuides[selectedContentType] || contentTypeGuides.single_interpretation
@@ -184,11 +199,16 @@ const Wechat: React.FC = () => {
       title: '面经拆解：高频问题与复习提示',
       author: '萌钠粒鲨',
       style: state?.markdown && !state?.recordId ? 'manual_rewrite' : 'single_interpretation',
+      wechat_theme: 'auto',
     })
     logApi
       .filters()
       .then((data) => setFilterOptions(data || { posts: [], companies: [] }))
       .catch(() => message.warning('筛选项加载失败，可继续手动编辑 Markdown'))
+    wechatApi
+      .themes()
+      .then((data) => setWechatThemeGroups(data || []))
+      .catch(() => message.warning('公众号排版主题加载失败，将使用默认主题'))
   }, [form])
 
   useEffect(() => {
@@ -298,6 +318,7 @@ const Wechat: React.FC = () => {
           digest: values.digest,
           source_record_id: selectedRecord?.id,
           style: values.style,
+          wechat_theme: values.wechat_theme,
         }),
       })
       await handleStreamEvents(response, 'AI 正文生成完成，可以继续编辑后保存')
@@ -337,6 +358,7 @@ const Wechat: React.FC = () => {
           post: postFilter,
           days: analysisDays,
           limit: 200,
+          wechat_theme: form.getFieldValue('wechat_theme'),
         }),
       })
       await handleStreamEvents(response, 'AI 已完成高频题分析和公众号正文生成')
@@ -378,6 +400,7 @@ const Wechat: React.FC = () => {
           limit: checklistLimit,
           order_by_time: checklistOrderByTime,
           days: checklistOrderByTime ? checklistDays : undefined,
+          wechat_theme: form.getFieldValue('wechat_theme'),
         }),
       })
       await handleStreamEvents(response, 'AI 已完成高频题速查清单生成')
@@ -413,6 +436,7 @@ const Wechat: React.FC = () => {
         digest: values.digest,
         source_record_id: selectedRecord?.id,
         style: values.style,
+        wechat_theme: values.wechat_theme,
         cover_prompt: values.cover_prompt,
         cover_base64: customCover?.base64,
         cover_mime: customCover?.mime,
@@ -522,6 +546,22 @@ const Wechat: React.FC = () => {
                       setMarkdown(defaultMarkdown)
                     }
                   }}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="wechat_theme"
+                  label="选择排版风格"
+                  tooltip="来自 Raphael Publish 的公众号排版主题；自动模式会根据内容类型选择默认风格。"
+                  style={{ marginBottom: 0 }}
+                >
+                  <Select
+                    showSearch
+                    optionFilterProp="label"
+                    options={wechatThemeOptions}
+                    onChange={() => {
+                      setArticle(null)
+                      setPreviewHtml('')
+                    }}
                   />
                 </Form.Item>
                 <Alert

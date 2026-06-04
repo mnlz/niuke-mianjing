@@ -8,9 +8,13 @@ import type {
   WeChatDraftRequest,
   WeChatPreviewData,
   WeChatPreviewRequest,
+  WeChatThemeGroup,
 } from './types'
 
 export const wechatApi = {
+  themes: () =>
+    client.get<ApiResponse<WeChatThemeGroup[]>>('/api/wechat/themes').then((r) => r.data.data),
+
   preview: (data: WeChatPreviewRequest) =>
     client.post<ApiResponse<WeChatPreviewData>>('/api/wechat/preview', data).then((r) => r.data.data),
 

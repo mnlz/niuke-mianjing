@@ -32,6 +32,7 @@ class ExportMdRequest(BaseModel):
 class WeChatPreviewRequest(BaseModel):
     markdown: str = Field(..., description="Markdown 内容")
     title: Optional[str] = Field(None, description="文章标题，优先级高于正文 H1")
+    wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID，默认按内容类型自动选择")
 
 
 class WeChatDraftRequest(BaseModel):
@@ -41,6 +42,7 @@ class WeChatDraftRequest(BaseModel):
     digest: Optional[str] = Field(None, description="摘要")
     content_source_url: Optional[str] = Field(None, description="原文链接")
     cover_theme: str = Field("auto", description="封面主题：auto/programming/ai/tech")
+    wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID")
 
 
 class WeChatAIGenerateRequest(BaseModel):
@@ -51,6 +53,7 @@ class WeChatAIGenerateRequest(BaseModel):
     content_source_url: Optional[str] = Field(None, description="原文链接")
     source_record_id: Optional[int] = Field(None, description="来源面经记录 ID")
     style: str = Field("single_interpretation", description="内容类型：single_interpretation/knowledge_deep_dive/trend_analysis/manual_rewrite/quick_checklist/interviewer_chain")
+    wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID，支持 Raphael Publish 主题")
 
 
 class WeChatAISaveRequest(BaseModel):
@@ -72,6 +75,7 @@ class WeChatQuestionAnalysisRequest(BaseModel):
     post: str = Field(..., description="岗位方向")
     days: int = Field(30, description="统计最近多少天", ge=1, le=180)
     limit: int = Field(200, description="最多分析多少条面经", ge=1, le=500)
+    wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID")
 
 
 class WeChatQuickChecklistRequest(BaseModel):
@@ -80,3 +84,4 @@ class WeChatQuickChecklistRequest(BaseModel):
     limit: int = Field(10, description="抽取面经条数", ge=1, le=50)
     order_by_time: bool = Field(False, description="是否按时间倒序抽取")
     days: Optional[int] = Field(None, description="按时间抽取时统计最近多少天", ge=1, le=180)
+    wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID")
