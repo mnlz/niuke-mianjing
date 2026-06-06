@@ -1,11 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useCrawlStore } from '@/store/crawlStore'
 import type { WSMessage } from '@/api/types'
+import { getAdminToken } from '@/utils/auth'
 
 function getWsUrl() {
   const loc = window.location
   const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${loc.host}/api/ws/crawl`
+  return `${proto}//${loc.host}/api/ws/crawl?token=${encodeURIComponent(getAdminToken())}`
 }
 
 export function useWebSocket() {

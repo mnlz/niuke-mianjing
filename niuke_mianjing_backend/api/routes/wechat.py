@@ -12,8 +12,11 @@ from niuke_mianjing_backend.schemas import (
     WeChatAIGenerateRequest,
     WeChatAISaveRequest,
     WeChatArticleData,
+    WeChatCoverGenerateRequest,
     WeChatDraftData,
     WeChatDraftRequest,
+    WeChatNewspicDraftData,
+    WeChatNewspicDraftRequest,
     WeChatPreviewData,
     WeChatPreviewRequest,
     WeChatQuestionAnalysisRequest,
@@ -93,6 +96,32 @@ async def stream_wechat_article(
 
 
 @router.post(
+    "/md-stream",
+    summary="流式生成微信公众号 Markdown",
+    description="调用 Chat Completions 流式生成可编辑 Markdown，前端再按排版主题转换为公众号 HTML。",
+)
+async def stream_wechat_markdown_article(
+    request: WeChatAIGenerateRequest,
+    wechat_service: WeChatService = Depends(get_wechat_service),
+):
+    if not request.markdown.strip():
+        raise BadRequestException("Markdown 内容不能为空")
+
+    def event_generator():
+        try:
+            for event in wechat_service.stream_wechat_markdown(request.markdown, request.title, request.style):
+                yield sse_event(event)
+        except Exception as exc:
+            yield sse_event({"type": "error", "message": str(exc)})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream; charset=utf-8",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post(
     "/question-analysis-stream",
     summary="AI 直接分析面经并流式生成微信公众号 HTML",
     description="查询指定公司、岗位、时间范围内的面经，将统计结果和样本摘录交给 AI 直接生成公众号 HTML。",
@@ -127,6 +156,52 @@ async def stream_question_analysis_article(
                 }
             )
             for event in wechat_service.stream_prompt_html(prompt, analysis["title"], "trend_analysis", request.wechat_theme):
+                yield sse_event(event)
+        except Exception as exc:
+            yield sse_event({"type": "error", "message": str(exc)})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream; charset=utf-8",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post(
+    "/question-analysis-md-stream",
+    summary="AI 直接分析面经并流式生成微信公众号 Markdown",
+    description="查询指定公司、岗位、时间范围内的面经，交给 AI 分析并生成可编辑 Markdown。",
+)
+async def stream_question_analysis_markdown_article(
+    request: WeChatQuestionAnalysisRequest,
+    wechat_service: WeChatService = Depends(get_wechat_service),
+):
+    if not request.company.strip() or not request.post.strip():
+        raise BadRequestException("公司和岗位方向不能为空")
+    try:
+        analysis = await wechat_service.build_question_analysis(
+            company=request.company.strip(),
+            post=request.post.strip(),
+            days=request.days,
+            limit=request.limit,
+        )
+    except ValueError as exc:
+        raise BadRequestException(str(exc))
+
+    prompt = wechat_service.build_question_analysis_markdown_prompt(analysis)
+
+    def event_generator():
+        try:
+            yield sse_event(
+                {
+                    "type": "analysis",
+                    "title": analysis["title"],
+                    "digest": analysis["digest"],
+                    "stats": analysis["stats"],
+                    "records": analysis["records"],
+                }
+            )
+            for event in wechat_service.stream_prompt_markdown(prompt, analysis["title"]):
                 yield sse_event(event)
         except Exception as exc:
             yield sse_event({"type": "error", "message": str(exc)})
@@ -183,6 +258,78 @@ async def stream_quick_checklist_article(
         media_type="text/event-stream; charset=utf-8",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.post(
+    "/quick-checklist-md-stream",
+    summary="AI 抽样分析面经并流式生成高频题速查 Markdown",
+    description="按公司、岗位、条数和可选时间范围抽取真实面经样本，交给 AI 生成可编辑 Markdown。",
+)
+async def stream_quick_checklist_markdown_article(
+    request: WeChatQuickChecklistRequest,
+    wechat_service: WeChatService = Depends(get_wechat_service),
+):
+    if not request.company.strip() or not request.post.strip():
+        raise BadRequestException("公司和岗位方向不能为空")
+    try:
+        analysis = await wechat_service.build_quick_checklist_analysis(
+            company=request.company.strip(),
+            post=request.post.strip(),
+            limit=request.limit,
+            order_by_time=request.order_by_time,
+            days=request.days,
+        )
+    except ValueError as exc:
+        raise BadRequestException(str(exc))
+
+    prompt = wechat_service.build_quick_checklist_markdown_prompt(analysis)
+
+    def event_generator():
+        try:
+            yield sse_event(
+                {
+                    "type": "analysis",
+                    "title": analysis["title"],
+                    "digest": analysis["digest"],
+                    "stats": analysis["stats"],
+                    "records": analysis["records"],
+                }
+            )
+            for event in wechat_service.stream_prompt_markdown(prompt, analysis["title"]):
+                yield sse_event(event)
+        except Exception as exc:
+            yield sse_event({"type": "error", "message": str(exc)})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream; charset=utf-8",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post(
+    "/cover-generate",
+    response_model=ApiResponse[dict],
+    summary="AI 生成微信公众号封面",
+    description="只生成封面图，不保存稿件。",
+)
+async def generate_wechat_cover(
+    request: WeChatCoverGenerateRequest,
+    wechat_service: WeChatService = Depends(get_wechat_service),
+):
+    if not request.markdown.strip():
+        raise BadRequestException("Markdown 内容不能为空")
+    try:
+        result = await run_in_threadpool(
+            wechat_service.generate_ai_cover,
+            markdown_content=request.markdown,
+            title=request.title,
+            style=request.style,
+            cover_prompt=request.cover_prompt,
+        )
+        return ApiResponse(message="封面生成成功", data=result)
+    except ValueError as exc:
+        raise BadRequestException(str(exc))
 
 
 @router.post(
@@ -287,6 +434,36 @@ async def publish_saved_article(
     try:
         result = await wechat_service.publish_saved_article(article_id)
         return ApiResponse(message="草稿创建成功，请登录公众号后台预览后再群发", data=result)
+    except ValueError as exc:
+        raise BadRequestException(str(exc))
+
+
+@router.post(
+    "/newspic-draft",
+    response_model=ApiResponse[WeChatNewspicDraftData],
+    summary="Create WeChat newspic draft",
+    description="Create a WeChat paste-image/newspic draft from card images. It will not publish automatically.",
+)
+async def create_wechat_newspic_draft(
+    request: WeChatNewspicDraftRequest,
+    wechat_service: WeChatService = Depends(get_wechat_service),
+):
+    if not request.title.strip():
+        raise BadRequestException("Title cannot be empty")
+    if not request.images:
+        raise BadRequestException("At least one card image is required")
+
+    try:
+        result = await run_in_threadpool(
+            wechat_service.create_newspic_draft,
+            title=request.title,
+            content=request.content,
+            images=request.images,
+            image_mimes=request.image_mimes,
+            need_open_comment=request.need_open_comment,
+            only_fans_can_comment=request.only_fans_can_comment,
+        )
+        return ApiResponse(message="贴图草稿创建成功，请登录公众号后台预览后再发布", data=result)
     except ValueError as exc:
         raise BadRequestException(str(exc))
 

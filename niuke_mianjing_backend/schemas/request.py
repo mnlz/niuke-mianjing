@@ -45,6 +45,15 @@ class WeChatDraftRequest(BaseModel):
     wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID")
 
 
+class WeChatNewspicDraftRequest(BaseModel):
+    title: str = Field(..., description="WeChat newspic draft title")
+    content: str = Field("", description="WeChat newspic text content")
+    images: List[str] = Field(..., description="Card images as base64 or data URLs", min_length=1, max_length=20)
+    image_mimes: Optional[List[str]] = Field(None, description="Image MIME types")
+    need_open_comment: int = Field(1, description="Whether comments are enabled", ge=0, le=1)
+    only_fans_can_comment: int = Field(0, description="Whether only fans can comment", ge=0, le=1)
+
+
 class WeChatAIGenerateRequest(BaseModel):
     markdown: str = Field(..., description="原始 Markdown 内容")
     title: Optional[str] = Field(None, description="标题")
@@ -65,9 +74,17 @@ class WeChatAISaveRequest(BaseModel):
     content_source_url: Optional[str] = Field(None, description="原文链接")
     source_record_id: Optional[int] = Field(None, description="来源面经记录 ID")
     style: str = Field("single_interpretation", description="内容类型")
+    wechat_theme: Optional[str] = Field(None, description="公众号排版主题 ID，支持 Raphael Publish 主题")
     cover_prompt: Optional[str] = Field(None, description="封面生成提示词")
     cover_base64: Optional[str] = Field(None, description="自定义封面 base64，不含 data URL 前缀")
     cover_mime: Optional[str] = Field(None, description="自定义封面 MIME 类型")
+
+
+class WeChatCoverGenerateRequest(BaseModel):
+    markdown: str = Field(..., description="原始 Markdown 内容")
+    title: str = Field(..., description="公众号标题")
+    style: str = Field("single_interpretation", description="内容类型")
+    cover_prompt: Optional[str] = Field(None, description="封面生成提示词")
 
 
 class WeChatQuestionAnalysisRequest(BaseModel):

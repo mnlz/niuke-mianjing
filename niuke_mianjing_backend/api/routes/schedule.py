@@ -74,6 +74,42 @@ async def delete_schedule(
     return ApiResponse(message="定时任务删除成功", data={"job_id": job_id})
 
 
+@router.post("/{job_id}/pause", response_model=ApiResponse[dict])
+async def pause_schedule(
+    job_id: str,
+    schedule_service: ScheduleService = Depends(get_schedule_service),
+):
+    await schedule_service.pause_job(job_id)
+    return ApiResponse(message="定时任务已暂停", data={"job_id": job_id, "status": "paused"})
+
+
+@router.post("/{job_id}/resume", response_model=ApiResponse[dict])
+async def resume_schedule(
+    job_id: str,
+    schedule_service: ScheduleService = Depends(get_schedule_service),
+):
+    await schedule_service.resume_job(job_id)
+    return ApiResponse(message="定时任务已恢复", data={"job_id": job_id, "status": "active"})
+
+
+@router.post("/{job_id}/run", response_model=ApiResponse[dict])
+async def run_schedule_now(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    schedule_service: ScheduleService = Depends(get_schedule_service),
+):
+    background_tasks.add_task(schedule_service.run_job_now, job_id)
+    return ApiResponse(message="定时任务已开始执行", data={"job_id": job_id, "status": "running"})
+
+
+@router.get("/runs/recent", response_model=ApiResponse[list])
+async def list_schedule_runs(
+    limit: int = 50,
+    schedule_service: ScheduleService = Depends(get_schedule_service),
+):
+    return ApiResponse(message="获取成功", data=await schedule_service.list_runs(min(max(limit, 1), 100)))
+
+
 @router.post(
     "/crawl",
     response_model=ApiResponse[CrawlTaskData],
@@ -90,4 +126,3 @@ async def crawl_now(
         message="爬取任务已启动",
         data=CrawlTaskData(posts=request.posts, max_pages=request.max_pages, status="running"),
     )
-

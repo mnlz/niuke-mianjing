@@ -5,8 +5,10 @@ from .request import (
     ExportMdRequest,
     WeChatPreviewRequest,
     WeChatDraftRequest,
+    WeChatNewspicDraftRequest,
     WeChatAIGenerateRequest,
     WeChatAISaveRequest,
+    WeChatCoverGenerateRequest,
     WeChatQuestionAnalysisRequest,
     WeChatQuickChecklistRequest,
 )
@@ -23,6 +25,7 @@ from .response import (
 from .wechat import (
     WeChatPreviewData,
     WeChatDraftData,
+    WeChatNewspicDraftData,
     WeChatArticleData,
     WeChatQuestionAnalysisData,
 )
@@ -42,8 +45,10 @@ __all__ = [
     "ExportMdRequest",
     "WeChatPreviewRequest",
     "WeChatDraftRequest",
+    "WeChatNewspicDraftRequest",
     "WeChatAIGenerateRequest",
     "WeChatAISaveRequest",
+    "WeChatCoverGenerateRequest",
     "WeChatQuestionAnalysisRequest",
     "WeChatQuickChecklistRequest",
     "ApiResponse",
@@ -56,6 +61,7 @@ __all__ = [
     "CrawlTaskData",
     "WeChatPreviewData",
     "WeChatDraftData",
+    "WeChatNewspicDraftData",
     "WeChatArticleData",
     "WeChatQuestionAnalysisData",
     "WSMessageType",

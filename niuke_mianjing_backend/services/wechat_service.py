@@ -18,6 +18,22 @@ from PIL import Image, ImageDraw
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.wechat_article_repo import WeChatArticleRepository
+from niuke_mianjing_backend.services.wechat_api_client import (
+    get_token,
+    push_draft,
+    push_newspic_draft,
+    upload_cover,
+)
+from niuke_mianjing_backend.services.wechat_prompts import (
+    _build_article_json_prompt,
+    _build_cover_prompt,
+    _build_question_analysis_html_prompt,
+    _build_question_analysis_markdown_prompt,
+    _build_quick_checklist_html_prompt,
+    _build_quick_checklist_markdown_prompt,
+    _build_stream_html_prompt,
+    _build_stream_markdown_prompt,
+)
 from niuke_mianjing_backend.services.wechat_formatter import (
     get_raphael_theme_groups,
     render_markdown_as_raphael_html,
@@ -25,7 +41,6 @@ from niuke_mianjing_backend.services.wechat_formatter import (
 )
 
 
-WECHAT_API_BASE = "https://api.weixin.qq.com/cgi-bin"
 TARGET_COVER_SIZE = (900, 500)
 
 
@@ -42,13 +57,14 @@ class WeChatService:
 
     def parse_markdown(self, content: str, fallback_title: str = "未命名文章") -> Tuple[Dict, str, str]:
         metadata: Dict[str, object] = {}
-        body = content.strip()
+        body = self._clean_markdown_text(content)
 
         if body.startswith("---"):
             match = re.match(r"^---\s*\n(.*?)\n---\s*\n?([\s\S]*)$", body)
             if match:
                 raw_meta, body = match.groups()
                 metadata = self._parse_frontmatter(raw_meta)
+                body = self._remove_empty_markdown_list_items(body)
 
         title = str(metadata.get("title") or "").strip() or self._extract_first_heading(body) or fallback_title
         return metadata, body, title
@@ -86,13 +102,13 @@ class WeChatService:
         self._ensure_openai_configured()
 
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
-        prompt = self._build_article_json_prompt(markdown_content, title or fallback, style)
+        prompt = _build_article_json_prompt(markdown_content, title or fallback, style)
         article = self._generate_article_json(prompt)
 
         article_title = title or article.get("title") or fallback
         article_digest = digest or article.get("digest") or self._plain_text(article.get("html", ""))[:100]
         html = self._ensure_wechat_html(article_title, article.get("html", ""), style, wechat_theme)
-        image_prompt = article.get("cover_prompt") or self._build_cover_prompt(article_title, markdown_content, style)
+        image_prompt = article.get("cover_prompt") or _build_cover_prompt(article_title, markdown_content, style)
         cover_base64 = self._generate_cover_with_openai(image_prompt)
 
         return await self.save_ai_article(
@@ -129,8 +145,8 @@ class WeChatService:
     ) -> Dict[str, Any]:
         self._ensure_openai_configured()
         final_html = self._ensure_wechat_html(title, html, style, wechat_theme)
-        prompt = cover_prompt or self._build_cover_prompt(title, markdown_content, style)
-        final_cover_base64 = self._normalize_base64_image(cover_base64) if cover_base64 else self._generate_cover_with_openai(prompt)
+        prompt = cover_prompt or _build_cover_prompt(title, markdown_content, style)
+        final_cover_base64 = self._normalize_base64_image(cover_base64) if cover_base64 else None
         final_cover_mime = cover_mime or "image/png"
         model_info = {
             "text_model": settings.OPENAI_TEXT_MODEL,
@@ -139,7 +155,7 @@ class WeChatService:
             "wechat_theme": wechat_theme or "auto",
             "flow": "stream-edit-save",
             "formatter": "raphael_python",
-            "cover_source": "custom_upload" if cover_base64 else "ai_generated",
+            "cover_source": "provided" if cover_base64 else "not_generated",
         }
         article_id = await self.article_repo.create_article(
             source_record_id=source_record_id,
@@ -157,6 +173,22 @@ class WeChatService:
         )
         return await self.article_repo.get_article(article_id)
 
+    def generate_ai_cover(
+        self,
+        markdown_content: str,
+        title: str,
+        style: str,
+        cover_prompt: Optional[str] = None,
+    ) -> Dict[str, str]:
+        self._ensure_openai_configured()
+        prompt = cover_prompt or _build_cover_prompt(title, markdown_content, style)
+        cover_base64 = self._generate_cover_with_openai(prompt)
+        return {
+            "cover_base64": cover_base64,
+            "cover_mime": "image/png",
+            "cover_prompt": prompt,
+        }
+
     def stream_wechat_html(
         self,
         markdown_content: str,
@@ -167,8 +199,20 @@ class WeChatService:
         self._ensure_openai_configured()
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         article_title = title or fallback
-        prompt = self._build_stream_html_prompt(markdown_content, article_title, style)
+        prompt = _build_stream_html_prompt(markdown_content, article_title, style)
         yield from self.stream_prompt_html(prompt, article_title, style, wechat_theme)
+
+    def stream_wechat_markdown(
+        self,
+        markdown_content: str,
+        title: Optional[str],
+        style: str,
+    ) -> Generator[Dict[str, Any], None, None]:
+        self._ensure_openai_configured()
+        fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
+        article_title = title or fallback
+        prompt = _build_stream_markdown_prompt(markdown_content, article_title, style)
+        yield from self.stream_prompt_markdown(prompt, article_title)
 
     def stream_prompt_html(
         self,
@@ -226,6 +270,57 @@ class WeChatService:
 
         html = self._ensure_wechat_html(article_title, self._clean_html_text(full_text), content_type, wechat_theme)
         yield {"type": "done", "title": article_title, "html": html}
+
+    def stream_prompt_markdown(self, prompt: str, article_title: str) -> Generator[Dict[str, Any], None, None]:
+        payload = {
+            "model": settings.OPENAI_TEXT_MODEL,
+            "stream": True,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "你是一个中文技术公众号主编。只输出 Markdown 正文，不要输出 HTML，不要输出解释。"
+                        "文章要像真人编辑写的，有判断、有取舍、有具体复习建议，少一点 AI 腔。"
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+        }
+        response = requests.post(
+            self._chat_completions_url(),
+            headers=self._openai_headers(),
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            stream=True,
+            timeout=(10, 240),
+        )
+        if response.status_code >= 400:
+            raise ValueError(f"OpenAI 流式生成 Markdown 失败：{response.text[:1000]}")
+
+        full_text = ""
+        yield {"type": "meta", "title": article_title}
+        response.encoding = "utf-8"
+        for raw_line in response.iter_lines(decode_unicode=False):
+            line = raw_line.decode("utf-8", errors="replace")
+            if not line:
+                continue
+            if line.startswith("data:"):
+                payload = line[5:].strip()
+            else:
+                payload = line.strip()
+            if payload == "[DONE]":
+                break
+            try:
+                data = json.loads(payload)
+            except json.JSONDecodeError:
+                continue
+            delta = self._extract_stream_delta(data)
+            if not delta:
+                continue
+            full_text += delta
+            yield {"type": "delta", "delta": delta}
+
+        markdown_text = self._clean_markdown_text(full_text)
+        yield {"type": "done", "title": article_title, "markdown": markdown_text}
 
     async def build_question_analysis(
         self,
@@ -291,7 +386,10 @@ class WeChatService:
         }
 
     def build_question_analysis_direct_prompt(self, analysis: Dict[str, Any]) -> str:
-        return self._build_question_analysis_html_prompt(analysis)
+        return _build_question_analysis_html_prompt(analysis)
+
+    def build_question_analysis_markdown_prompt(self, analysis: Dict[str, Any]) -> str:
+        return _build_question_analysis_markdown_prompt(analysis)
 
     async def build_quick_checklist_analysis(
         self,
@@ -367,7 +465,10 @@ class WeChatService:
         }
 
     def build_quick_checklist_prompt(self, analysis: Dict[str, Any]) -> str:
-        return self._build_quick_checklist_html_prompt(analysis)
+        return _build_quick_checklist_html_prompt(analysis)
+
+    def build_quick_checklist_markdown_prompt(self, analysis: Dict[str, Any]) -> str:
+        return _build_quick_checklist_markdown_prompt(analysis)
 
     async def list_articles(self, limit: int = 20, offset: int = 0):
         return await self.article_repo.list_articles(limit, offset)
@@ -380,16 +481,16 @@ class WeChatService:
         if not article:
             raise ValueError("公众号稿件不存在")
         if not article.get("html") or not article.get("cover_base64"):
-            raise ValueError("稿件缺少 HTML 或封面图，请先重新生成")
+            raise ValueError("稿件缺少 HTML 或封面图，请先生成/上传封面并保存")
 
         try:
-            token = self.get_token()
+            token = get_token()
             with tempfile.TemporaryDirectory() as temp_dir:
                 cover_path = str(Path(temp_dir) / f"wechat_cover{self._cover_suffix(article.get('cover_mime'))}")
                 self._write_base64_image(article["cover_base64"], cover_path)
-                cover_media_id = self.upload_cover(token, cover_path)
+                cover_media_id = upload_cover(token, cover_path)
 
-            draft = self.push_draft(
+            draft = push_draft(
                 token=token,
                 title=article["title"],
                 html_content=article["html"],
@@ -446,70 +547,52 @@ class WeChatService:
         final_img.save(output_path, "PNG")
         return output_path
 
-    def get_token(self, appid: Optional[str] = None, secret: Optional[str] = None) -> str:
-        appid = appid or settings.WECHAT_APP_ID
-        secret = secret or settings.WECHAT_APP_SECRET
-        if not appid or not secret:
-            raise ValueError("请先在 .env 配置 WECHAT_APP_ID 和 WECHAT_APP_SECRET")
 
-        response = requests.get(
-            f"{WECHAT_API_BASE}/token",
-            params={"grant_type": "client_credential", "appid": appid, "secret": secret},
-            timeout=15,
-        )
-        data = response.json()
-        if "access_token" not in data:
-            raise ValueError(f"获取微信 access_token 失败：{data}")
-        return data["access_token"]
 
-    def upload_cover(self, token: str, image_path: str) -> str:
-        suffix = Path(image_path).suffix.lower()
-        mime = "image/jpeg" if suffix in {".jpg", ".jpeg"} else "image/webp" if suffix == ".webp" else "image/png"
-        with open(image_path, "rb") as f:
-            response = requests.post(
-                f"{WECHAT_API_BASE}/material/add_material",
-                params={"access_token": token, "type": "image"},
-                files={"media": (Path(image_path).name, f, mime)},
-                timeout=30,
-            )
-        data = response.json()
-        if "media_id" not in data:
-            raise ValueError(f"上传微信封面失败：{data}")
-        return data["media_id"]
 
-    def push_draft(
+
+    def create_newspic_draft(
         self,
-        token: str,
         title: str,
-        html_content: str,
-        cover_media_id: str,
-        author: str,
-        digest: Optional[str] = None,
-        content_source_url: Optional[str] = None,
+        content: str,
+        images: List[str],
+        image_mimes: Optional[List[str]] = None,
+        need_open_comment: int = 1,
+        only_fans_can_comment: int = 0,
     ) -> Dict:
-        article = {
-            "title": title[:64],
-            "author": author[:8],
-            "content": html_content,
-            "thumb_media_id": cover_media_id,
-            "show_cover_pic": 0,
-        }
-        if digest:
-            article["digest"] = digest[:120]
-        if content_source_url:
-            article["content_source_url"] = content_source_url
+        clean_title = (title or "").strip()
+        if not clean_title:
+            raise ValueError("Draft title is required")
+        if not images:
+            raise ValueError("At least one card image is required")
+        if len(images) > 20:
+            raise ValueError("WeChat newspic draft supports at most 20 images in this app")
 
-        response = requests.post(
-            f"{WECHAT_API_BASE}/draft/add",
-            params={"access_token": token},
-            data=json.dumps({"articles": [article]}, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json; charset=utf-8"},
-            timeout=30,
+        token = get_token()
+        image_media_ids: List[str] = []
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for index, image_base64 in enumerate(images):
+                normalized = self._normalize_base64_image(image_base64)
+                mime = image_mimes[index] if image_mimes and index < len(image_mimes) else "image/png"
+                image_path = str(Path(temp_dir) / f"newspic_card_{index + 1}{self._cover_suffix(mime)}")
+                self._write_base64_image(normalized, image_path)
+                image_media_ids.append(upload_cover(token, image_path))
+
+        draft = push_newspic_draft(
+            token=token,
+            title=clean_title,
+            content=content or "",
+            image_media_ids=image_media_ids,
+            need_open_comment=need_open_comment,
+            only_fans_can_comment=only_fans_can_comment,
         )
-        data = response.json()
-        if "media_id" not in data:
-            raise ValueError(f"创建微信草稿失败：{data}")
-        return data
+        return {
+            "title": clean_title,
+            "media_id": draft["media_id"],
+            "image_media_ids": image_media_ids,
+            "wechat_response": draft,
+        }
 
     def create_draft(
         self,
@@ -523,14 +606,14 @@ class WeChatService:
     ) -> Dict:
         rendered = self.render_html(markdown_content, title or "未命名文章", wechat_theme)
         article_title = title or rendered["title"]
-        token = self.get_token()
+        token = get_token()
 
         with tempfile.TemporaryDirectory() as temp_dir:
             cover_path = str(Path(temp_dir) / "wechat_cover.png")
             self.generate_cover(cover_path, cover_theme, markdown_content)
-            cover_media_id = self.upload_cover(token, cover_path)
+            cover_media_id = upload_cover(token, cover_path)
 
-        draft = self.push_draft(
+        draft = push_draft(
             token=token,
             title=article_title,
             html_content=rendered["html"],
@@ -878,6 +961,7 @@ class WeChatService:
     ) -> str:
         cleaned = self._clean_html_text(html)
         if "<section" not in cleaned and "<p" not in cleaned:
+            cleaned = self._remove_empty_markdown_list_items(cleaned)
             cleaned = markdown.markdown(cleaned, extensions=["extra", "tables", "fenced_code", "nl2br", "sane_lists"])
         resolved_type = "trend_analysis" if self._is_question_analysis_title(title) else content_type
         return render_raphael_wechat_html(title, cleaned, resolved_type, wechat_theme)
@@ -898,244 +982,42 @@ class WeChatService:
         return cleaned.strip()
 
     @staticmethod
+    def _clean_markdown_text(value: str) -> str:
+        cleaned = value.strip()
+        cleaned = re.sub(r"^```(?:markdown|md)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = re.sub(r"<!--\s*WECHAT_ARTICLE_TITLE:.*?-->\s*", "", cleaned, flags=re.IGNORECASE | re.S)
+        cleaned = re.sub(r"[\u200b-\u200f\ufeff]", "", cleaned)
+        cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", cleaned)
+        return WeChatService._remove_empty_markdown_list_items(cleaned).strip()
+
+    @staticmethod
+    def _remove_empty_markdown_list_items(value: str) -> str:
+        lines = value.splitlines()
+        cleaned_lines: List[str] = []
+        for line in lines:
+            stripped = re.sub(r"[\s\u00a0\u200b\u200c\u200d\ufeff]+", "", line)
+            if re.fullmatch(r"[-*+]", stripped):
+                continue
+            if re.fullmatch(r"\d{1,3}[.)、．。]", stripped):
+                continue
+            cleaned_lines.append(line)
+        text = "\n".join(cleaned_lines)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text
+
+    @staticmethod
     def _plain_text(html: str) -> str:
         return BeautifulSoup(html or "", "html.parser").get_text(" ", strip=True)
 
-    @staticmethod
-    def _build_article_json_prompt(markdown_content: str, title: str, style: str) -> str:
-        html_prompt = WeChatService._build_stream_html_prompt(markdown_content, title, style)
-        return f"""
-请基于下面要求生成公众号稿件，并只返回 JSON：
-{{
-  "title": "不超过 30 字的公众号标题",
-  "digest": "不超过 100 字的摘要",
-  "html": "完整微信公众号 HTML",
-  "cover_prompt": "英文封面图提示词，不含文字、logo、水印"
-}}
 
-HTML 生成要求：
-{html_prompt}
-""".strip()
 
-    @staticmethod
-    def _build_stream_html_prompt(markdown_content: str, title: str, style: str) -> str:
-        content_prompt = WeChatService._wechat_content_type_prompt(style)
-        return f"""
-请把原始素材改写成一篇适合微信公众号阅读的中文技术文章。
 
-只输出微信公众号 HTML，不要输出 Markdown 代码块，不要解释。
 
-通用内容要求：
-1. 保留原始事实，不编造公司、岗位、轮次、结果。
-2. 标题和开头要有钩子，但不要标题党，不要夸大数据或面试难度。
-3. 使用真人技术号编辑口吻，可以有判断和提醒，但不要空泛说教。
-4. 段落短一点，长段拆开；每一屏都要有小标题、列表或提示块形成视觉节奏。
-5. 除“面试趋势分析”外，尽量少用表格；确需表格时最多 3-5 行，列数不超过 3，避免手机阅读横向拥挤。
-6. 结尾要给可执行的复习建议或收藏清单，并自然引导读者互动。
 
-本次内容类型模板：
-{content_prompt}
 
-去 AI 味要求：
-1. 禁止出现：作为 AI、本文将、综上所述、希望对你有帮助、值得注意的是、事实上、不难发现、总体来说、综合来看。
-2. 尽量不用：赋能、闭环、生态、抓手、底层逻辑、范式、沉淀、势能、护城河、降维打击。
-3. 不要“首先、其次、最后”机械三段式；用更自然的过渡。
-4. 读起来要像技术号编辑写给同学看的复盘，信息密度高，但不端着。
 
-排版要求：
-1. 只能使用微信公众号兼容的 HTML 和内联 style。
-2. 不要使用 style 标签、script、svg、canvas、外链 CSS、伪元素、Flexbox、Grid。
-3. 不要使用 linear-gradient、rgba/hsla、box-shadow；颜色用 #RRGGBB 或 rgb(r,g,b) 纯色。
-4. 复杂视觉块可以用 table 做外层布局，但正文内容不要滥用表格。
-5. 用 HTML + CSS 绘制简单视觉块：导读卡片、重点提示、复习优先级、收藏清单。
-6. 正文字号 15-16px，line-height 1.75-1.85，移动端阅读舒服。
-7. 必须包含注释：<!-- WECHAT_ARTICLE_TITLE: {title} -->
-8. 推荐白底、浅蓝/浅黄提示块、深蓝标题，不要大面积彩色背景。
 
-默认标题：{title}
-
-原始 Markdown：
-{markdown_content[:12000]}
-""".strip()
-
-    @staticmethod
-    def _wechat_content_type_prompt(content_type: str) -> str:
-        prompts = {
-            "single_interpretation": """
-内容类型：单篇面经解读。
-目标：把一篇真实面经写成完整公众号解读文，读者看完知道这场面试难在哪、该怎么复盘。
-推荐模板：
-1. 开头钩子：用 80-120 字说明公司/岗位/面试感受/为什么值得看。
-2. 面经速览：用短段落或轻量提示块写公司、岗位、轮次、整体难度、适合人群，不要做大表格。
-3. 问题拆解：挑 6-10 个代表性问题，每个问题写“考点是什么 / 该怎么答 / 复习提醒”。
-4. 面试官真正想看什么：总结基础深挖、项目表达、工程经验或算法能力。
-5. 复习优先级：用列表给出 A/B/C 级复习顺序。
-6. 结尾：提醒收藏，并抛一个自然的问题引导评论。
-表格限制：原则上不用表格；如果必须用，最多 3 行。
-""",
-            "knowledge_deep_dive": """
-内容类型：技术知识点精讲。
-目标：从一篇面经中挑 3-5 个最值得展开的知识点，写成“能学到东西”的技术精讲文。
-推荐模板：
-1. 开头钩子：指出这篇面经里最值得复盘的几个知识点。
-2. 知识点选择理由：解释为什么 AI 选这些点，它们为什么高频、为什么容易被追问。
-3. 每个知识点独立成节，结构固定为：面试怎么问 / 核心原理 / 30 秒答题模板 / 常见追问 / 易错点 / 复习建议。
-4. 知识点之间要有自然过渡，不要像题库列表。
-5. 结尾给“今天先补哪几个点”的行动清单。
-表格限制：不要用大表格；知识点内容用小标题、列表、提示块呈现。
-""",
-            "manual_rewrite": """
-内容类型：手动粘贴。
-目标：根据用户粘贴的 Markdown 判断素材类型，并改写成一篇公众号文章。
-推荐模板：
-1. 如果素材是面经：按“单篇面经解读”写。
-2. 如果素材是知识笔记：按“技术知识点精讲”写。
-3. 如果素材是零散问题：整理成清单文，补充简答关键词和复习建议。
-4. 如果素材已经是文章：优化标题、开头、节奏和移动端排版，保留核心观点。
-5. 结尾给可执行建议或互动问题。
-表格限制：默认不用表格；除非原素材强依赖表格，且表格要短。
-""",
-            "quick_checklist": """
-内容类型：高频题速查清单。
-目标：把一篇面经整理成适合收藏、临考前快速翻看的题目清单。
-推荐模板：
-1. 开头钩子：说明这份清单适合什么读者、什么时候看。
-2. 速查规则：告诉读者每题只看三件事：问法、30 秒答法、易错点。
-3. 清单正文：整理 10-15 个问题，每个问题用独立小块呈现：题目 / 30 秒答法 / 易错点 / 复习优先级。
-4. 如果问题很多，按 Java 基础、并发、数据库、框架、项目等分组。
-5. 结尾给“今晚先背这 5 个”的短清单。
-表格限制：不要做大表格；用编号卡片或短列表。最多用一个 3 行以内的小表总结优先级。
-""",
-            "interviewer_chain": """
-内容类型：面试官追问链路。
-目标：不是罗列题目，而是还原面试官如何从一个问题继续追问，帮助读者练“接招能力”。
-推荐模板：
-1. 开头钩子：指出很多人不是不会第一问，而是倒在第二问、第三问。
-2. 选择 3-5 个核心问题，每个问题写成一条追问链。
-3. 每条追问链结构：第一问 / 合格回答 / 面试官可能继续追问 1-3 个 / 追问背后的考察点 / 怎么答更稳 / 容易暴露的短板。
-4. 加一节“被追问时别急着背八股”，讲表达策略。
-5. 结尾给模拟练习方法。
-表格限制：不用表格；追问链用箭头、短段落和提示块呈现。
-""",
-            "trend_analysis": """
-内容类型：面试趋势分析。
-该类型通常由专门的高频分析接口生成。如果误走当前接口，请按“单篇素材中的趋势观察”处理，不要伪造频次。
-""",
-        }
-        return prompts.get(content_type, prompts["single_interpretation"]).strip()
-
-    @staticmethod
-    def _build_question_analysis_html_prompt(analysis: Dict[str, Any]) -> str:
-        title = analysis["title"]
-        stats = analysis.get("stats", {})
-        records = analysis.get("records", [])
-        top_questions = stats.get("top_questions", [])
-        categories = stats.get("categories", [])
-        source_payload = {
-            "title": title,
-            "digest": analysis.get("digest"),
-            "stats": stats,
-            "top_questions": top_questions,
-            "categories": categories,
-            "records": records,
-        }
-        return f"""
-请基于下面的真实牛客面经素材，直接分析并写成一篇适合微信公众号发布的中文技术选题文章。
-
-只输出微信公众号 HTML，不要输出 Markdown 代码块，不要解释。
-
-参考版式方向：
-用户想要接近这类公众号报告文风：标题直给，正文是白底深蓝数据报告风；少用花哨卡片，多用分割线、居中小标题、表格榜单、频次数字加粗、分类清单。整体像“某公司某岗位高频题 TOP 清单 + 备考指南”，不是营销海报。
-
-内容目标：
-1. 你要真的读完 records 里的真实面经素材，综合面经语境、问题频次和知识点分类做判断，不要只改写统计字段。
-2. 标题和开头要有点击欲，但不要标题党，不要夸大数据。
-3. 开头 80 字内说清楚：统计了哪家公司、哪个岗位、什么时间范围、样本数、对读者有什么用。
-4. 文章必须包含：引子、数据结论、高频 TOP10 表格、分类 TOP 清单、趋势观察、最低限度备考清单、最后收藏提醒。
-5. 高频问题不能只罗列，要补充“为什么爱问 / 简答抓手 / 复习建议”，并尽量带出现频次。
-6. 需要有 2-4 句像真人编辑的观察，比如“最近更偏基础深挖还是项目追问”“哪些题看似八股但其实在考工程经验”。
-7. 语气像有经验的技术号编辑，少一点 AI 腔，不要出现“作为 AI”“本文将”“综上所述”等套话。
-8. 可以提醒数据来自当前库内面经样本，不代表全部面试。
-9. 不要把 records 原文整段粘贴出来，要消化成“趋势 + 高频题 + 备考策略”。
-10. 结尾要自然引导收藏和复盘，可以抛一个问题让读者留言，不要硬广。
-
-去 AI 味要求：
-1. 禁止出现：作为 AI、本文将、综上所述、希望对你有帮助、值得注意的是、事实上、不难发现、总体来说、综合来看。
-2. 尽量不用：赋能、闭环、生态、抓手、底层逻辑、范式、沉淀、势能、护城河、降维打击。
-3. 不要“首先、其次、最后”机械连接，过渡要像真人编辑写稿。
-
-排版要求：
-1. 只能使用微信公众号兼容的 HTML 和内联 style。
-2. 不要使用 style 标签、script、svg、canvas、外链 CSS、伪元素、Flexbox、Grid。
-3. 不要使用 linear-gradient、rgba/hsla、box-shadow；复杂布局尽量用 table，避免同步到微信后样式丢失。
-4. 主色使用深蓝 rgb(15,76,129)，正文文字 rgb(63,63,63)，白底，不要渐变，不要大面积彩色背景。
-5. 正文段落统一 14px、line-height 1.75、letter-spacing 0.08em-0.1em、margin 1.3em 8px、text-align justify。
-6. H1 使用居中、下边框深蓝、display:table、padding:0 1em、font-size:16.8px。
-7. H2 使用居中深蓝底白字小标签，margin:4em auto 2em，display:table，padding:0 0.4em，font-size:16.8px。
-8. 章节之间使用 hr，样式为浅灰 2px 横线，margin:1.5em 0，不要使用 rgba。
-9. 高频榜必须用 table，列包括“排名 / 高频题 / 频次 / 复习抓手”。表格边框 #dfdfdf，单元格 padding 0.25em 0.5em，频次用深蓝 strong 加粗。
-10. 分类部分可以继续用小表格或编号段落，避免一堆圆角卡片；最多使用 1 个浅蓝提示块作为结尾提醒。
-11. 必须包含注释：<!-- WECHAT_ARTICLE_TITLE: {title} -->
-
-建议 HTML 样式骨架：
-<section style="text-align:left;line-height:1.75;font-family:-apple-system-font,BlinkMacSystemFont,'Helvetica Neue','PingFang SC','Microsoft YaHei',Arial,sans-serif;font-size:14px;color:rgb(63,63,63);background:#fff;">
-  <h1 style="font-size:16.8px;font-weight:bold;margin:2em auto 1em;text-align:center;display:table;padding:0 1em;color:rgb(63,63,63);border-bottom:2px solid rgb(15,76,129);">标题</h1>
-  <p style="margin:1.5em 8px;text-align:justify;line-height:1.75;font-size:14px;letter-spacing:0.1em;color:rgb(63,63,63);">正文...</p>
-  <hr style="border:0;border-top:2px solid #e5e7eb;height:0;margin:1.5em 0;" />
-  <h2 style="font-size:16.8px;font-weight:bold;margin:4em auto 2em;text-align:center;display:table;padding:0 0.4em;color:#fff;background:rgb(15,76,129);">章节标题</h2>
-</section>
-
-默认标题：{title}
-
-真实面经素材和轻量统计 JSON：
-{json.dumps(source_payload, ensure_ascii=False)[:18000]}
-""".strip()
-
-    @staticmethod
-    def _build_quick_checklist_html_prompt(analysis: Dict[str, Any]) -> str:
-        title = analysis["title"]
-        stats = analysis.get("stats", {})
-        records = analysis.get("records", [])
-        source_payload = {
-            "title": title,
-            "digest": analysis.get("digest"),
-            "stats": stats,
-            "records": records,
-        }
-        return f"""
-请基于下面的真实牛客面经样本，写成一篇适合微信公众号发布的“高频题速查清单”。
-
-只输出微信公众号 HTML，不要输出 Markdown 代码块，不要解释。
-
-重要边界：
-1. 这是 {stats.get("sample_mode", "样本抽取")}，范围是 {stats.get("range_label", "当前样本")}，样本数 {stats.get("record_count", 0)} 篇。
-2. 不要写成“全网统计”或“全部面试趋势”，只能说“从当前样本看”。
-3. 你要读 records 里的真实面经内容，结合轻量频次统计整理速查清单。
-
-内容目标：
-1. 开头 80 字内说清：公司、岗位、样本数、抽样方式、这篇适合谁收藏。
-2. 输出 10-15 个最值得背的高频题，每题包括：题目、30 秒答法、易错点、复习优先级。
-3. 如果题目多，按 Java 基础、并发、数据库、框架、项目、算法等分组。
-4. 补充“今晚优先背哪 5 个”和“面试前 10 分钟怎么扫一遍”。
-5. 语气像有经验的技术号编辑，短句多一点，适合手机快速阅读。
-
-表格限制：
-1. 不要做大表格，不要 4 列以上表格。
-2. 正文清单用编号、小标题、浅色提示块呈现。
-3. 最多允许一个 3 行以内的小表格，用来总结复习优先级。
-
-排版要求：
-1. 只能使用微信公众号兼容的 HTML 和内联 style。
-2. 不要使用 style 标签、script、svg、canvas、外链 CSS、伪元素、Flexbox、Grid。
-3. 不要使用 linear-gradient、rgba/hsla、box-shadow。
-4. 白底，深蓝标题，正文 15-16px，line-height 1.75-1.85。
-5. 必须包含注释：<!-- WECHAT_ARTICLE_TITLE: {title} -->
-
-默认标题：{title}
-
-真实面经样本 JSON：
-{json.dumps(source_payload, ensure_ascii=False)[:18000]}
-""".strip()
 
     @staticmethod
     def _extract_questions(content: str) -> List[str]:
@@ -1183,30 +1065,7 @@ HTML 生成要求：
                 return name
         return "业务与开放问题"
 
-    @staticmethod
-    def _build_cover_prompt(title: str, markdown_content: str, style: str) -> str:
-        cover_direction = WeChatService._wechat_cover_direction(style)
-        return f"""
-Create a premium WeChat official account cover image for a Chinese technical interview article.
-Canvas target: 900x500, clean 9:5 editorial composition, suitable for mobile feed preview.
-Topic: {title}.
-Visual direction: {cover_direction}.
-Style: modern but restrained, crisp composition, high contrast focal area, no clutter.
-Color: deep blue, white, light gray, small gold or cyan accent; avoid purple gradient and noisy neon.
-Do not include readable Chinese/English text, logo, watermark, UI screenshot, cartoon character, or messy symbols.
-""".strip()
 
-    @staticmethod
-    def _wechat_cover_direction(content_type: str) -> str:
-        directions = {
-            "single_interpretation": "interview notes interpretation, document review, selected questions, subtle code and checklist elements",
-            "knowledge_deep_dive": "deep technical knowledge explanation, layered architecture, code snippets as abstract shapes, focused learning atmosphere",
-            "trend_analysis": "professional data report, question frequency analysis, clean charts, ranking list shapes, knowledge graph",
-            "manual_rewrite": "editorial technology article, clean reading experience, abstract article layout and notebook elements",
-            "quick_checklist": "compact study checklist, flash cards, priority markers, interview preparation notes",
-            "interviewer_chain": "interviewer follow-up chain, conversation flow, connected question nodes, reasoning path",
-        }
-        return directions.get(content_type, directions["single_interpretation"])
 
     @staticmethod
     def _pick_palette(theme: str, markdown_content: str) -> Dict:

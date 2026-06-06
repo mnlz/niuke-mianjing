@@ -3,10 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from niuke_mianjing_backend.api.deps import get_schedule_service, get_wechat_service
+from niuke_mianjing_backend.api.deps import get_review_service, get_schedule_service, get_wechat_service
 from niuke_mianjing_backend.api.middleware.auth import AuthMiddleware
 from niuke_mianjing_backend.api.middleware.error_handler import AppException, app_exception_handler, generic_exception_handler
-from niuke_mianjing_backend.api.routes import crawl, logs, schedule, wechat, ws
+from niuke_mianjing_backend.api.routes import auth, crawl, logs, recruitment, review, schedule, wechat, ws
+from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.database import DatabasePool
 
 
@@ -23,7 +24,12 @@ async def lifespan(app: FastAPI):
     await wechat_service.init_table()
     print("微信公众号稿件表初始化完成")
 
+    review_service = get_review_service()
+    await review_service.init_tables()
+    print("面经复习表初始化完成")
+
     schedule_service.start()
+    await schedule_service.restore_jobs()
     print("定时任务调度器已启动")
     print("应用启动成功")
 
@@ -50,7 +56,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,3 +83,6 @@ app.include_router(logs.router)
 app.include_router(ws.router)
 app.include_router(crawl.router)
 app.include_router(wechat.router)
+app.include_router(review.router)
+app.include_router(auth.router)
+app.include_router(recruitment.router)

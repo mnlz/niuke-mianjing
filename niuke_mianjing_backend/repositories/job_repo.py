@@ -7,17 +7,6 @@ from niuke_mianjing_backend.repositories.base import BaseRepository
 
 class JobRepository(BaseRepository):
     async def init_table(self):
-        exists = await self._fetch_one(
-            """
-            SELECT COUNT(*)
-            FROM information_schema.tables
-            WHERE table_schema = DATABASE()
-              AND table_name = 'scheduled_jobs'
-            """
-        )
-        if exists and exists[0] > 0:
-            return
-
         await self._execute(
             """
             CREATE TABLE IF NOT EXISTS `scheduled_jobs` (
@@ -35,6 +24,22 @@ class JobRepository(BaseRepository):
                 UNIQUE KEY `uk_job_id` (`job_id`),
                 KEY `idx_status` (`status`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='定时任务表'
+            """
+        )
+        await self._execute(
+            """
+            CREATE TABLE IF NOT EXISTS `scheduled_job_runs` (
+                `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+                `job_id` VARCHAR(100) NOT NULL,
+                `started_at` DATETIME NOT NULL,
+                `finished_at` DATETIME NULL,
+                `duration_seconds` INT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'running',
+                `result_json` JSON NULL,
+                `error_message` TEXT NULL,
+                KEY `idx_job_runs_job_started` (`job_id`, `started_at`),
+                KEY `idx_job_runs_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """
         )
 
@@ -61,7 +66,7 @@ class JobRepository(BaseRepository):
         rows = await self._fetch_all(
             """
             SELECT job_id, name, posts, schedule_type, schedule, max_pages, next_run_time, status
-            FROM scheduled_jobs WHERE status = 'active' ORDER BY created_at DESC
+            FROM scheduled_jobs ORDER BY created_at DESC
             """
         )
         jobs = []
@@ -75,6 +80,7 @@ class JobRepository(BaseRepository):
                     "schedule": row[4],
                     "max_pages": row[5],
                     "next_run_time": row[6].isoformat() if row[6] else None,
+                    "status": row[7],
                 }
             )
         return jobs
@@ -96,6 +102,7 @@ class JobRepository(BaseRepository):
                 "schedule": row[4],
                 "max_pages": row[5],
                 "next_run_time": row[6].isoformat() if row[6] else None,
+                "status": row[7],
             }
         return None
 
@@ -109,3 +116,75 @@ class JobRepository(BaseRepository):
 
     async def delete_job(self, job_id: str):
         await self._execute("DELETE FROM scheduled_jobs WHERE job_id = %s", (job_id,))
+
+    async def update_job_status(self, job_id: str, status: str, next_run_time: datetime = None):
+        await self._execute(
+            """
+            UPDATE scheduled_jobs
+            SET status = %s, next_run_time = %s, updated_at = %s
+            WHERE job_id = %s
+            """,
+            (status, next_run_time, datetime.now(), job_id),
+        )
+
+    async def create_run(self, job_id: str, started_at: datetime) -> int:
+        return await self._execute_lastrowid(
+            """
+            INSERT INTO scheduled_job_runs (job_id, started_at, status)
+            VALUES (%s, %s, 'running')
+            """,
+            (job_id, started_at),
+        )
+
+    async def finish_run(
+        self,
+        run_id: int,
+        finished_at: datetime,
+        duration_seconds: int,
+        status: str,
+        result: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
+    ):
+        await self._execute(
+            """
+            UPDATE scheduled_job_runs
+            SET finished_at = %s,
+                duration_seconds = %s,
+                status = %s,
+                result_json = %s,
+                error_message = %s
+            WHERE id = %s
+            """,
+            (
+                finished_at,
+                duration_seconds,
+                status,
+                json.dumps(result, ensure_ascii=False) if result is not None else None,
+                error_message,
+                run_id,
+            ),
+        )
+
+    async def get_recent_runs(self, limit: int = 50) -> List[Dict[str, Any]]:
+        rows = await self._fetch_all(
+            """
+            SELECT id, job_id, started_at, finished_at, duration_seconds, status, result_json, error_message
+            FROM scheduled_job_runs
+            ORDER BY started_at DESC
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        return [
+            {
+                "id": row[0],
+                "job_id": row[1],
+                "started_at": row[2].isoformat() if row[2] else None,
+                "finished_at": row[3].isoformat() if row[3] else None,
+                "duration_seconds": row[4],
+                "status": row[5],
+                "result": json.loads(row[6]) if isinstance(row[6], str) else row[6],
+                "error_message": row[7],
+            }
+            for row in rows
+        ]

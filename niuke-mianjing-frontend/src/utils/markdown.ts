@@ -8,6 +8,21 @@ const fallback = (value: string | null | undefined, empty = '未知') => {
 const escapeTableCell = (value: string | null | undefined, empty = '未知') =>
   fallback(value, empty).replace(/\|/g, '\\|').replace(/\n/g, ' ')
 
+const normalizeInterviewContent = (value: string | null | undefined) => {
+  const text = fallback(value, '暂无内容')
+    .replace(/\r/g, '\n')
+    .replace(/([。！？?])\s*(\d{1,2}[.、])/g, '$1\n$2')
+    .replace(/([^\n])\s+(\d{1,2}[.、]\s*[^\d\s])/g, '$1\n$2')
+    .replace(/\s+(?=(?:[一二三四五六七八九十]+、))/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n')
+}
+
 export const getNowcoderUrl = (record: Pick<NiukeRecord, 'content_id'>) =>
   record.content_id ? `https://www.nowcoder.com/discuss/${record.content_id}` : ''
 
@@ -27,7 +42,7 @@ export const buildRecordMarkdown = (record: NiukeRecord) => {
     lines.push(`| 原文链接 | [牛客讨论区](${sourceUrl}) |`)
   }
 
-  lines.push('', '## 面经正文', '', fallback(record.content, '暂无内容'))
+  lines.push('', '## 面经正文', '', normalizeInterviewContent(record.content))
   return lines.join('\n')
 }
 

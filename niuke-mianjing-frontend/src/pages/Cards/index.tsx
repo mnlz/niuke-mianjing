@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Card, Col, Input, message, Row, Select, Space, Tag, Typography } from 'antd'
+import { Button, Card, Col, Input, InputNumber, message, Modal, Row, Select, Space, Switch, Tag, Typography } from 'antd'
 import {
   CopyOutlined,
   FileImageOutlined,
@@ -8,242 +8,24 @@ import {
   SendOutlined,
 } from '@ant-design/icons'
 import { toPng } from 'html-to-image'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { logApi } from '@/api'
+import { logApi, wechatApi } from '@/api'
 import type { CardTheme, FilterOptions, NiukeRecord } from '@/api/types'
 import { buildRecordMarkdown, buildXhsDraft } from '@/utils/markdown'
+import CardPage from './CardPage'
+import {
+  cardSizeOptions,
+  cardSizePresets,
+  defaultMarkdown,
+  themes,
+  themeOptions,
+  type CardSizePresetKey,
+} from './cardConfig'
+import { paginateMarkdown } from './cardPagination'
+import { downloadText, parseDataUrlImage, safeName } from './cardUtils'
 
 const { Text, Title } = Typography
 const { TextArea } = Input
-
-type ThemeConfig = {
-  pageBg: string
-  accent: string
-  accentSoft: string
-  heading: string
-  text: string
-  muted: string
-  tableHead: string
-}
-
-const CARD_WIDTH = 440
-const CARD_HEIGHT = 586
-const CONTENT_LIMIT = 475
-
-const themeOptions: Array<{ label: string; value: CardTheme }> = [
-  { label: '小红书清新', value: 'xiaohongshu' },
-  { label: '字节蓝', value: 'bytedance' },
-  { label: '阿里橙', value: 'alibaba' },
-  { label: '极简黑白', value: 'minimal' },
-  { label: '商务简报', value: 'business' },
-]
-
-const themes: Record<CardTheme, ThemeConfig> = {
-  xiaohongshu: {
-    pageBg: '#ffffff',
-    accent: '#ffb000',
-    accentSoft: '#fff1bf',
-    heading: '#262626',
-    text: '#2f2f2f',
-    muted: '#8c8c8c',
-    tableHead: '#fff2bf',
-  },
-  bytedance: {
-    pageBg: '#ffffff',
-    accent: '#1677ff',
-    accentSoft: '#eaf3ff',
-    heading: '#102033',
-    text: '#24364b',
-    muted: '#64748b',
-    tableHead: '#eaf3ff',
-  },
-  alibaba: {
-    pageBg: '#ffffff',
-    accent: '#ff7a00',
-    accentSoft: '#fff0dc',
-    heading: '#332112',
-    text: '#3d3329',
-    muted: '#8a6b4a',
-    tableHead: '#ffe5c2',
-  },
-  minimal: {
-    pageBg: '#ffffff',
-    accent: '#111827',
-    accentSoft: '#f3f4f6',
-    heading: '#111827',
-    text: '#1f2937',
-    muted: '#6b7280',
-    tableHead: '#f3f4f6',
-  },
-  business: {
-    pageBg: '#ffffff',
-    accent: '#4f46e5',
-    accentSoft: '#eef2ff',
-    heading: '#172033',
-    text: '#334155',
-    muted: '#64748b',
-    tableHead: '#eef2ff',
-  },
-}
-
-const defaultMarkdown = '# 面经卡片\n\n选择一条面经，或在这里粘贴 Markdown 内容。'
-
-const downloadText = (filename: string, content: string, type: string) => {
-  const blob = new Blob([content], { type })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
-
-const safeName = (value: string) => value.replace(/[\\/:*?"<>|]/g, '_').slice(0, 48)
-
-const normalizeMarkdown = (value: string) =>
-  value
-    .replace(/\r\n/g, '\n')
-    .replace(/^(\d+[.)、])(?=\S)/gm, '$1 ')
-    .trim()
-
-const splitBlocks = (value: string) => {
-  const lines = normalizeMarkdown(value).split('\n')
-  const blocks: string[] = []
-  let i = 0
-
-  while (i < lines.length) {
-    const line = lines[i]
-    if (!line.trim()) {
-      i += 1
-      continue
-    }
-
-    if (/^\|/.test(line.trim())) {
-      const table: string[] = []
-      while (i < lines.length && /^\|/.test(lines[i].trim())) {
-        table.push(lines[i])
-        i += 1
-      }
-      blocks.push(table.join('\n'))
-      continue
-    }
-
-    if (/^#{1,6}\s+/.test(line.trim())) {
-      blocks.push(line)
-      i += 1
-      continue
-    }
-
-    if (/^\d+[.)、]\s+/.test(line.trim())) {
-      blocks.push(line)
-      i += 1
-      continue
-    }
-
-    const paragraph: string[] = []
-    while (
-      i < lines.length &&
-      lines[i].trim() &&
-      !/^\|/.test(lines[i].trim()) &&
-      !/^#{1,6}\s+/.test(lines[i].trim()) &&
-      !/^\d+[.)、]\s+/.test(lines[i].trim())
-    ) {
-      paragraph.push(lines[i])
-      i += 1
-    }
-    blocks.push(paragraph.join('\n'))
-  }
-
-  return blocks
-}
-
-const estimateBlockHeight = (block: string) => {
-  const text = block.replace(/[#>*_`|[\]()]/g, '').trim()
-  if (/^#\s+/.test(block)) return 56
-  if (/^##\s+/.test(block)) return 42
-  if (/^#{3,6}\s+/.test(block)) return 34
-  if (/^\|/.test(block.trim())) {
-    const rows = block.split('\n').filter((line) => /^\|/.test(line.trim()))
-    return Math.max(80, rows.length * 36 + 12)
-  }
-  if (/^\d+[.)、]\s+/.test(block.trim())) {
-    return Math.max(28, Math.ceil(text.length / 27) * 24)
-  }
-  return Math.max(38, Math.ceil(text.length / 25) * 28 + 8)
-}
-
-const paginateMarkdown = (value: string) => {
-  const blocks = splitBlocks(value)
-  const pages: string[] = []
-  let current: string[] = []
-  let height = 0
-
-  blocks.forEach((block) => {
-    const blockHeight = estimateBlockHeight(block)
-    if (current.length && height + blockHeight > CONTENT_LIMIT) {
-      pages.push(current.join('\n\n'))
-      current = []
-      height = 0
-    }
-    current.push(block)
-    height += blockHeight
-  })
-
-  if (current.length) pages.push(current.join('\n\n'))
-  return pages.length ? pages : [defaultMarkdown]
-}
-
-const CardPage: React.FC<{
-  content: string
-  page: number
-  total: number
-  theme: ThemeConfig
-  innerRef: (node: HTMLDivElement | null) => void
-}> = ({ content, page, total, theme, innerRef }) => (
-  <div
-    ref={innerRef}
-    className="md2-card-page"
-    style={{
-      width: CARD_WIDTH,
-      height: CARD_HEIGHT,
-      background: theme.pageBg,
-      color: theme.text,
-      padding: '28px 32px',
-      boxShadow: '0 18px 46px rgba(15, 23, 42, 0.10)',
-      overflow: 'hidden',
-      position: 'relative',
-    }}
-  >
-    <div className="md2-card-topbar" style={{ color: theme.accent }}>
-      <span>‹ 备忘录</span>
-      <span>分享 · · ·</span>
-    </div>
-    <div
-      className="md2-card-content"
-      style={
-        {
-          '--accent': theme.accent,
-          '--accent-soft': theme.accentSoft,
-          '--table-head': theme.tableHead,
-          '--heading': theme.heading,
-          '--text': theme.text,
-          '--muted': theme.muted,
-        } as React.CSSProperties
-      }
-    >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
-    {total > 1 && (
-      <div className="md2-page-no" style={{ color: theme.muted }}>
-        {page + 1}/{total}
-      </div>
-    )}
-  </div>
-)
 
 const Cards: React.FC = () => {
   const location = useLocation()
@@ -255,15 +37,25 @@ const Cards: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<NiukeRecord | null>(null)
   const [markdown, setMarkdown] = useState(defaultMarkdown)
   const [theme, setTheme] = useState<CardTheme>('xiaohongshu')
+  const [cardPresetKey, setCardPresetKey] = useState<CardSizePresetKey>('xhs_3_4')
   const [exporting, setExporting] = useState(false)
   const [recordLoading, setRecordLoading] = useState(false)
   const [postFilter, setPostFilter] = useState('')
   const [companyFilter, setCompanyFilter] = useState('')
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ posts: [], companies: [] })
+  const [newspicOpen, setNewspicOpen] = useState(false)
+  const [newspicTitle, setNewspicTitle] = useState('')
+  const [newspicContent, setNewspicContent] = useState('')
+  const [newspicImageCount, setNewspicImageCount] = useState(9)
+  const [newspicPublishing, setNewspicPublishing] = useState(false)
+  const [newspicCommentEnabled, setNewspicCommentEnabled] = useState(true)
 
   const xhsDraft = useMemo(() => buildXhsDraft(selectedRecord, markdown), [selectedRecord, markdown])
   const currentTheme = themes[theme]
-  const pages = useMemo(() => paginateMarkdown(markdown), [markdown])
+  const currentCardPreset = cardSizePresets[cardPresetKey]
+  const exportPixelRatio = currentCardPreset.exportWidth / currentCardPreset.width
+  const pages = useMemo(() => paginateMarkdown(markdown, currentCardPreset), [currentCardPreset, markdown])
+  const newspicMaxImages = Math.min(20, pages.length)
 
   const postOptions = useMemo(
     () => [{ label: '全部方向', value: '' }, ...filterOptions.posts.map((post) => ({ label: post, value: post }))],
@@ -324,7 +116,7 @@ const Cards: React.FC = () => {
         const node = cardRefs.current[i]
         if (!node) continue
         const dataUrl = await toPng(node, {
-          pixelRatio: 2,
+          pixelRatio: exportPixelRatio,
           cacheBust: true,
           backgroundColor: '#ffffff',
         })
@@ -343,6 +135,74 @@ const Cards: React.FC = () => {
     }
   }
 
+  const buildDefaultNewspicContent = () => {
+    const source = selectedRecord
+      ? `${selectedRecord.company || '目标公司'} / ${selectedRecord.post || '面试方向'}`
+      : '面经复习卡片'
+    const tags = xhsDraft.tags.map((tag) => `#${tag}`).join(' ')
+    return `${xhsDraft.title}\n\n整理了一组 ${source} 的复习卡片，适合通勤、睡前、面试前快速过一遍。\n\n${tags}`
+  }
+
+  const openNewspicModal = () => {
+    setNewspicTitle((value) => value || xhsDraft.title.slice(0, 64))
+    setNewspicContent((value) => value || buildDefaultNewspicContent())
+    setNewspicImageCount(Math.min(9, pages.length || 1))
+    setNewspicOpen(true)
+  }
+
+  const renderCardImages = async (count: number) => {
+    const imageCount = Math.min(Math.max(count, 1), pages.length, 20)
+    const images: string[] = []
+    const imageMimes: string[] = []
+
+    for (let i = 0; i < imageCount; i += 1) {
+      const node = cardRefs.current[i]
+      if (!node) continue
+      const dataUrl = await toPng(node, {
+        pixelRatio: exportPixelRatio,
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+      })
+      const parsed = parseDataUrlImage(dataUrl)
+      images.push(parsed.base64)
+      imageMimes.push(parsed.mime)
+    }
+
+    if (!images.length) {
+      throw new Error('没有可发布的卡片图片，请先确认右侧预览已加载')
+    }
+    return { images, imageMimes }
+  }
+
+  const handleCreateNewspicDraft = async () => {
+    if (!newspicTitle.trim()) {
+      message.warning('请先填写贴图标题')
+      return
+    }
+
+    try {
+      setNewspicPublishing(true)
+      const { images, imageMimes } = await renderCardImages(newspicImageCount)
+      const result = await wechatApi.createNewspicDraft({
+        title: newspicTitle.trim(),
+        content: newspicContent,
+        images,
+        image_mimes: imageMimes,
+        need_open_comment: newspicCommentEnabled ? 1 : 0,
+        only_fans_can_comment: 0,
+      })
+      setNewspicOpen(false)
+      Modal.success({
+        title: '公众号贴图草稿已创建',
+        content: `已上传 ${images.length} 张卡片图，草稿 media_id：${result.media_id}`,
+      })
+    } catch (e: unknown) {
+      message.error((e as Error).message || '创建公众号贴图草稿失败')
+    } finally {
+      setNewspicPublishing(false)
+    }
+  }
+
   const copyCaption = async () => {
     await navigator.clipboard.writeText(xhsDraft.caption)
     message.success('小红书文案已复制')
@@ -352,7 +212,7 @@ const Cards: React.FC = () => {
     <div>
       <div className="page-title">
         <h2>卡片工坊</h2>
-        <p>按固定卡片尺寸自动拆分 Markdown，也可以转换为微信公众号 HTML 并推送草稿箱。</p>
+        <p>按小红书、微信等平台尺寸智能拆分 Markdown，也可以导出图片或发布公众号贴图草稿。</p>
       </div>
 
       <Card className="toolbar-card">
@@ -397,9 +257,21 @@ const Cards: React.FC = () => {
             }))}
           />
           <Select<CardTheme> value={theme} onChange={setTheme} options={themeOptions} style={{ width: 160 }} />
+          <Select<CardSizePresetKey>
+            value={cardPresetKey}
+            onChange={setCardPresetKey}
+            options={cardSizeOptions}
+            style={{ width: 240 }}
+          />
           <Tag color="blue">自动拆分：{pages.length} 张</Tag>
+          <Tag color="geekblue">
+            导出 {currentCardPreset.exportWidth}×{currentCardPreset.exportHeight}
+          </Tag>
           <Button icon={<FileImageOutlined />} type="primary" loading={exporting} onClick={handleExportPng}>
             导出全部 PNG
+          </Button>
+          <Button icon={<SendOutlined />} onClick={openNewspicModal}>
+            发布公众号贴图
           </Button>
           <Button icon={<SendOutlined />} onClick={() => navigate('/wechat', { state: { markdown, recordId: selectedRecord?.id } })}>
             去公众号工坊
@@ -462,6 +334,7 @@ const Cards: React.FC = () => {
                   page={index}
                   total={pages.length}
                   theme={currentTheme}
+                  preset={currentCardPreset}
                   innerRef={(node) => {
                     cardRefs.current[index] = node
                   }}
@@ -471,6 +344,62 @@ const Cards: React.FC = () => {
           </Card>
         </Col>
       </Row>
+
+      <Modal
+        title="发布为公众号贴图草稿"
+        open={newspicOpen}
+        okText="创建贴图草稿"
+        cancelText="取消"
+        confirmLoading={newspicPublishing}
+        onOk={handleCreateNewspicDraft}
+        onCancel={() => setNewspicOpen(false)}
+        width={680}
+      >
+        <Space direction="vertical" size={14} style={{ width: '100%' }}>
+          <div>
+            <Text strong>标题</Text>
+            <Input
+              value={newspicTitle}
+              onChange={(e) => setNewspicTitle(e.target.value)}
+              maxLength={64}
+              showCount
+              placeholder="请输入公众号贴图标题"
+              style={{ marginTop: 8 }}
+            />
+          </div>
+
+          <div>
+            <Text strong>正文说明</Text>
+            <TextArea
+              value={newspicContent}
+              onChange={(e) => setNewspicContent(e.target.value)}
+              autoSize={{ minRows: 6, maxRows: 10 }}
+              placeholder="显示在贴图草稿里的文字说明，可留空"
+              style={{ marginTop: 8 }}
+            />
+          </div>
+
+          <Space wrap>
+            <Text strong>发布图片数</Text>
+            <InputNumber
+              min={1}
+              max={newspicMaxImages || 1}
+              value={Math.min(newspicImageCount, newspicMaxImages || 1)}
+              onChange={(value) => setNewspicImageCount(value || 1)}
+            />
+            <Text type="secondary">将使用当前预览里的前 {Math.min(newspicImageCount, newspicMaxImages || 1)} 张卡片</Text>
+          </Space>
+
+          <Space>
+            <Text strong>开启留言</Text>
+            <Switch checked={newspicCommentEnabled} onChange={setNewspicCommentEnabled} />
+          </Space>
+
+          <Text type="secondary">
+            贴图模式会把卡片上传为公众号永久图片素材，并创建草稿；不会自动群发。建议一次 3-9 张，读者刷起来更舒服。
+          </Text>
+        </Space>
+      </Modal>
 
     </div>
   )

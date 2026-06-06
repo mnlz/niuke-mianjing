@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     API_PORT: int
 
     API_KEY: Optional[str] = None
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     class Config:
         env_file = PROJECT_ROOT / ".env"

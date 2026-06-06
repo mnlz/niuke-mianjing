@@ -146,6 +146,7 @@ def render_raphael_wechat_html(
         section.append(node)
 
     _drop_duplicate_first_heading(section, title)
+    _normalize_lists_for_wechat(section, content_soup)
     _normalize_tree(section, theme)
     _convert_image_grids(section, content_soup)
     _force_text_inheritance(section, theme)
@@ -257,6 +258,128 @@ def _drop_duplicate_first_heading(section: Tag, title: str) -> None:
         first_content_heading.decompose()
 
 
+def _normalize_lists_for_wechat(section: Tag, soup: BeautifulSoup) -> None:
+    _remove_empty_list_marker_paragraphs(section)
+    _absorb_ordered_list_continuations(section)
+    _merge_adjacent_lists(section)
+
+    for list_tag in list(section.find_all(["ul", "ol"])):
+        for li in list(list_tag.find_all("li", recursive=False)):
+            _replace_list_paragraphs_with_spans(li, soup)
+            _trim_list_item_breaks(li)
+            if _is_empty_list_item(li):
+                li.decompose()
+        if not list_tag.find("li", recursive=False):
+            list_tag.decompose()
+        elif list_tag.name == "ol" and list_tag.has_attr("start"):
+            del list_tag.attrs["start"]
+
+
+def _remove_empty_list_marker_paragraphs(section: Tag) -> None:
+    for tag in list(section.find_all(["p", "div"])):
+        if tag.find_parent(["li", "pre", "code"]):
+            continue
+        if _is_empty_list_marker_text(tag.get_text("", strip=True)):
+            tag.decompose()
+
+
+def _merge_adjacent_lists(section: Tag) -> None:
+    for list_tag in list(section.find_all(["ul", "ol"])):
+        if not list_tag.parent:
+            continue
+        cursor = list_tag.next_sibling
+        while cursor is not None:
+            if _is_blank_node(cursor):
+                next_cursor = cursor.next_sibling
+                cursor.extract()
+                cursor = next_cursor
+                continue
+            if isinstance(cursor, Tag) and cursor.name == list_tag.name:
+                next_cursor = cursor.next_sibling
+                for li in list(cursor.find_all("li", recursive=False)):
+                    list_tag.append(li.extract())
+                cursor.decompose()
+                cursor = next_cursor
+                continue
+            break
+
+
+def _absorb_ordered_list_continuations(section: Tag) -> None:
+    for list_tag in list(section.find_all("ol")):
+        if not list_tag.parent:
+            continue
+        items = list_tag.find_all("li", recursive=False)
+        if not items:
+            continue
+        target = items[-1]
+        cursor = list_tag.next_sibling
+        while cursor is not None:
+            if _is_blank_node(cursor):
+                next_cursor = cursor.next_sibling
+                cursor.extract()
+                cursor = next_cursor
+                continue
+            if isinstance(cursor, Tag) and cursor.name == "ol":
+                break
+            if isinstance(cursor, Tag) and cursor.name in {"h1", "h2", "h3", "h4", "h5", "h6", "hr", "table"}:
+                break
+            if isinstance(cursor, Tag) and cursor.name in {"p", "div", "blockquote", "pre", "ul"}:
+                next_cursor = cursor.next_sibling
+                target.append(cursor.extract())
+                cursor = next_cursor
+                continue
+            break
+
+
+def _replace_list_paragraphs_with_spans(li: Tag, soup: BeautifulSoup) -> None:
+    for paragraph in list(li.find_all("p")):
+        if paragraph.find_parent("li") is not li:
+            continue
+        if not paragraph.get_text("", strip=True) and not paragraph.find(["img", "table", "pre", "code", "ul", "ol"]):
+            paragraph.decompose()
+            continue
+        span = soup.new_tag("span")
+        if paragraph.get("style"):
+            span["style"] = _merge_style(paragraph["style"], "display:block;")
+        else:
+            span["style"] = "display:block;"
+        for child in list(paragraph.contents):
+            span.append(child.extract())
+        paragraph.replace_with(span)
+
+
+def _is_empty_list_marker_text(text: str) -> bool:
+    normalized = re.sub(r"[\s\u00a0\u200b\u200c\u200d\ufeff]+", "", text or "")
+    return bool(re.fullmatch(r"(?:[-*+]|[0-9]{1,3}[.)、．。])", normalized))
+
+
+def _is_empty_list_item(li: Tag) -> bool:
+    if li.find(["img", "table", "pre", "code", "ul", "ol"]):
+        return False
+    return not li.get_text("", strip=True)
+
+
+def _has_previous_visible_sibling(tag: Tag) -> bool:
+    node = tag.previous_sibling
+    while node is not None:
+        if not _is_blank_node(node):
+            return True
+        node = node.previous_sibling
+    return False
+
+
+def _trim_list_item_breaks(li: Tag) -> None:
+    while li.contents and _is_blank_node(li.contents[0]):
+        li.contents[0].extract()
+    while li.contents and _is_blank_node(li.contents[-1]):
+        li.contents[-1].extract()
+    for br in list(li.find_all("br")):
+        previous = br.previous_sibling
+        next_node = br.next_sibling
+        if (previous is None or _is_blank_node(previous)) and (next_node is None or _is_blank_node(next_node)):
+            br.decompose()
+
+
 def _normalize_tree(section: Tag, theme: Dict[str, str]) -> None:
     for tag in section.find_all(True):
         if tag.name in {"section"}:
@@ -284,7 +407,7 @@ def _normalize_tree(section: Tag, theme: Dict[str, str]) -> None:
 
 
 def _clean_attributes(tag: Tag) -> None:
-    allowed = {"href", "src", "alt", "title", "colspan", "rowspan", "cellpadding", "cellspacing", "border"}
+    allowed = {"href", "src", "alt", "title", "start", "colspan", "rowspan", "cellpadding", "cellspacing", "border"}
     for attr in list(tag.attrs):
         if attr == "data-raphael-role":
             continue

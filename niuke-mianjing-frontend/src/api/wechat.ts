@@ -4,8 +4,12 @@ import type {
   WeChatAIGenerateRequest,
   WeChatAISaveRequest,
   WeChatArticleData,
+  WeChatCoverGenerateData,
+  WeChatCoverGenerateRequest,
   WeChatDraftData,
   WeChatDraftRequest,
+  WeChatNewspicDraftData,
+  WeChatNewspicDraftRequest,
   WeChatPreviewData,
   WeChatPreviewRequest,
   WeChatThemeGroup,
@@ -21,6 +25,11 @@ export const wechatApi = {
   createDraft: (data: WeChatDraftRequest) =>
     client.post<ApiResponse<WeChatDraftData>>('/api/wechat/draft', data, { timeout: 120000 }).then((r) => r.data.data),
 
+  createNewspicDraft: (data: WeChatNewspicDraftRequest) =>
+    client
+      .post<ApiResponse<WeChatNewspicDraftData>>('/api/wechat/newspic-draft', data, { timeout: 240000 })
+      .then((r) => r.data.data),
+
   aiGenerate: (data: WeChatAIGenerateRequest) =>
     client
       .post<ApiResponse<WeChatArticleData>>('/api/wechat/ai-generate', data, { timeout: 240000 })
@@ -28,6 +37,11 @@ export const wechatApi = {
 
   saveGenerated: (data: WeChatAISaveRequest) =>
     client.post<ApiResponse<WeChatArticleData>>('/api/wechat/ai-save', data, { timeout: 180000 }).then((r) => r.data.data),
+
+  generateCover: (data: WeChatCoverGenerateRequest) =>
+    client
+      .post<ApiResponse<WeChatCoverGenerateData>>('/api/wechat/cover-generate', data, { timeout: 180000 })
+      .then((r) => r.data.data),
 
   article: (id: number) =>
     client.get<ApiResponse<WeChatArticleData>>(`/api/wechat/articles/${id}`).then((r) => r.data.data),

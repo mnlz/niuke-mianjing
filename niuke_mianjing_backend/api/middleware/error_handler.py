@@ -31,5 +31,5 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 
 async def generic_exception_handler(request: Request, exc: Exception):
-    response = ApiResponse(code=500, message=f"Internal Server Error: {str(exc)}", data=None)
+    response = ApiResponse(code=500, message="Internal Server Error", data=None)
     return JSONResponse(status_code=500, content=response.model_dump())

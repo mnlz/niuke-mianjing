@@ -7,7 +7,7 @@ from typing import Dict, List
 import requests
 from bs4 import BeautifulSoup
 
-from niuke_mianjing_backend.config import get_proxy_config
+from niuke_mianjing_backend.config import get_proxy_config, settings
 from niuke_mianjing_backend.crawler.feishu_bot import FeishuBot
 from niuke_mianjing_backend.repositories.crawl_log_repo import CrawlLogRepository
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
@@ -46,6 +46,7 @@ class CrawlService:
         self.event_bus = EventBus()
         self.feishu_bot = FeishuBot(feishu_webhook) if feishu_webhook else None
         self.proxies = get_proxy_config()
+        self._running_posts = set()
 
     def _build_list_payload(self, job_id: int, page: int, level: int = 2, order: int = 3) -> str:
         body = {
@@ -135,16 +136,22 @@ class CrawlService:
             await self.event_bus.publish(WSMessageType.CRAWL_ERROR, {"post": post, "error": msg}, msg)
             return {"new": 0, "updated": 0, "status": "failed", "error": msg}
 
+        if post in self._running_posts:
+            msg = f"{post} 方向已有爬取任务正在执行"
+            await self.event_bus.publish(WSMessageType.CRAWL_ERROR, {"post": post, "error": msg}, msg)
+            return {"new": 0, "updated": 0, "status": "skipped", "error": msg}
+        self._running_posts.add(post)
+
         try:
-            resp = self._fetch_list_page(job_id, 1, level=2, order=3)
-            online = self._get_page_data(resp)
+            resp = await asyncio.to_thread(self._fetch_list_page, job_id, 1, 2, 3)
+            online = await asyncio.to_thread(self._get_page_data, resp)
 
             total_new = 0
             total_updated = 0
 
             for i in range(1, max_pages + 1):
-                r = self._fetch_list_page(job_id, i, level=2, order=3)
-                data = self._parse_content(r, post)
+                r = await asyncio.to_thread(self._fetch_list_page, job_id, i, 2, 3)
+                data = await asyncio.to_thread(self._parse_content, r, post)
                 result = await self.niuke_repo.upsert_content(data)
                 new_count = result["new"]
                 updated_count = result["updated"]
@@ -164,7 +171,7 @@ class CrawlService:
                     f"【{post}】第 {i}/{max_pages} 页完成",
                 )
 
-                await asyncio.sleep(2)
+                await asyncio.sleep(settings.SLEEP_INTERVAL)
 
             await self.niuke_repo.save_page_data(online, post)
 
@@ -201,6 +208,8 @@ class CrawlService:
             )
 
             return {"new": 0, "updated": 0, "status": "failed", "error": error_msg}
+        finally:
+            self._running_posts.discard(post)
 
     async def crawl_all(self, post_list: List[str], max_pages: int = 15) -> List[Dict]:
         summary = []

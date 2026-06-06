@@ -13,6 +13,18 @@ export interface ScheduleJob {
   schedule: string
   max_pages: number
   next_run_time: string | null
+  status?: 'active' | 'paused' | 'invalid'
+}
+
+export interface ScheduleRun {
+  id: number
+  job_id: string
+  started_at: string | null
+  finished_at: string | null
+  duration_seconds: number | null
+  status: string
+  result?: Record<string, unknown> | null
+  error_message?: string | null
 }
 
 export interface CrawlLog {
@@ -104,6 +116,53 @@ export interface FilterOptions {
   companies: string[]
 }
 
+export type ReviewMastery = 'new' | 'learning' | 'fuzzy' | 'mastered'
+
+export interface ReviewProgress {
+  record_id: number
+  favorite: boolean
+  mastery: ReviewMastery
+  note?: string | null
+  last_reviewed_at?: string | null
+  updated_at?: string | null
+}
+
+export interface ReviewOverview {
+  company: string
+  post: string
+  days: number
+  record_count: number
+  question_count: number
+  top_questions: Array<{ question: string; count: number; category: string }>
+  categories: Array<{ name: string; count: number }>
+  sample_records: Array<{ id: number; title: string; edit_time?: string | null; read?: number | null }>
+  empty: boolean
+}
+
+export interface ReviewAIQuestion {
+  question: string
+  answer: string
+  followups?: string[]
+  tags?: string[]
+}
+
+export interface ReviewAIContent {
+  summary: string
+  difficulty: string
+  priority: string
+  questions: ReviewAIQuestion[]
+  knowledge_points: Array<{ name: string; why: string; review_tip: string }>
+  action_plan: string[]
+}
+
+export interface ReviewAIResult {
+  record_id: number
+  review: ReviewAIContent
+  model?: string
+  updated_at?: string | null
+  cached?: boolean
+}
+
 export interface JobPostItem {
   name: string
   jobId: number
@@ -120,6 +179,54 @@ export interface JobTreeItem {
   name: string
   level: number
   children: JobTreeChild[]
+}
+
+export interface RecruitmentSource {
+  source: string
+  company: string
+  description: string
+}
+
+export interface RecruitmentTrack {
+  id: string
+  name: string
+  description: string
+  keywords: string[]
+}
+
+export interface RecruitmentJob {
+  source: string
+  source_job_id: string
+  company: string
+  title: string
+  category?: string | null
+  job_family?: string | null
+  location?: string | null
+  country?: string | null
+  business_unit?: string | null
+  product?: string | null
+  employment_type?: string | null
+  experience?: string | null
+  description: string
+  requirements: string
+  highlights?: string
+  preferred_qualifications?: string
+  source_url: string
+  updated_at?: string | null
+  crawled_at: string
+}
+
+export interface RecruitmentJobPage {
+  source: string
+  company: string
+  track?: string | null
+  keywords?: string[]
+  items: RecruitmentJob[]
+  page: number
+  page_size: number
+  total: number
+  has_more: boolean
+  cached: boolean
 }
 
 export type CardTheme = 'xiaohongshu' | 'bytedance' | 'alibaba' | 'minimal' | 'business'
@@ -172,6 +279,22 @@ export interface WeChatDraftData {
   wechat_response?: Record<string, unknown>
 }
 
+export interface WeChatNewspicDraftRequest {
+  title: string
+  content?: string
+  images: string[]
+  image_mimes?: string[]
+  need_open_comment?: number
+  only_fans_can_comment?: number
+}
+
+export interface WeChatNewspicDraftData {
+  title: string
+  media_id: string
+  image_media_ids: string[]
+  wechat_response?: Record<string, unknown>
+}
+
 export interface WeChatAIGenerateRequest {
   markdown: string
   title?: string
@@ -195,6 +318,19 @@ export interface WeChatAISaveRequest extends WeChatAIGenerateRequest {
   cover_prompt?: string
   cover_base64?: string
   cover_mime?: string
+}
+
+export interface WeChatCoverGenerateRequest {
+  markdown: string
+  title: string
+  style?: WeChatAIGenerateRequest['style']
+  cover_prompt?: string
+}
+
+export interface WeChatCoverGenerateData {
+  cover_base64: string
+  cover_mime: string
+  cover_prompt: string
 }
 
 export interface WeChatArticleData {

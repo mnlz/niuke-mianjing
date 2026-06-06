@@ -6,6 +6,7 @@ from niuke_mianjing_backend.services.schedule_service import ScheduleService
 from niuke_mianjing_backend.services.log_service import LogService
 from niuke_mianjing_backend.services.event_bus import EventBus
 from niuke_mianjing_backend.services.wechat_service import WeChatService
+from niuke_mianjing_backend.services.review_service import ReviewService
 
 
 @lru_cache()
@@ -31,3 +32,8 @@ def get_log_service() -> LogService:
 @lru_cache()
 def get_wechat_service() -> WeChatService:
     return WeChatService()
+
+
+@lru_cache()
+def get_review_service() -> ReviewService:
+    return ReviewService()

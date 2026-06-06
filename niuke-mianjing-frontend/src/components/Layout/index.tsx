@@ -6,6 +6,8 @@ import {
   DatabaseOutlined,
   FileMarkdownOutlined,
   FileSearchOutlined,
+  HomeOutlined,
+  LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SendOutlined,
@@ -14,12 +16,13 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useCrawlStore } from '@/store/crawlStore'
+import { clearAdminToken } from '@/utils/auth'
 
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
 const menuItems = [
-  { key: '/', icon: <BarChartOutlined />, label: '首页' },
+  { key: '/admin', icon: <BarChartOutlined />, label: '后台首页' },
   { key: '/quick-crawl', icon: <ThunderboltOutlined />, label: '快速爬取' },
   { key: '/schedule', icon: <ClockCircleOutlined />, label: '定时任务' },
   { key: '/logs', icon: <FileSearchOutlined />, label: '爬取日志' },
@@ -44,11 +47,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <Layout className="app-shell">
       <Sider trigger={null} collapsible collapsed={collapsed} width={232} className="app-sider">
         <div className="brand">
-          <div className="brand-mark">牛</div>
+          <img className="brand-logo-img" src="/offerlens.svg" alt="OfferLens" />
           {!collapsed && (
             <div>
-              <Text className="brand-title">牛客面经助手</Text>
-              <Text className="brand-subtitle">内容采集与卡片生成</Text>
+              <Text className="brand-title">OfferLens</Text>
+              <Text className="brand-subtitle">内容采集与发布后台</Text>
             </div>
           )}
         </div>
@@ -71,6 +74,19 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Text className="header-version">niuke-mianjing v2.0</Text>
           </div>
           <div className="header-right">
+            <Button type="text" icon={<HomeOutlined />} onClick={() => navigate('/')}>
+              查看前台
+            </Button>
+            <Button
+              type="text"
+              icon={<LogoutOutlined />}
+              onClick={() => {
+                clearAdminToken()
+                navigate('/admin-login', { replace: true })
+              }}
+            >
+              退出
+            </Button>
             {runningCount > 0 && (
               <Badge status="processing" text={<Text className="running-text">爬取中（{runningCount}）</Text>} />
             )}

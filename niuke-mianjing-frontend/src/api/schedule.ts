@@ -1,5 +1,5 @@
 import client from './client'
-import type { ApiResponse, ScheduleJob, CreateScheduleRequest } from './types'
+import type { ApiResponse, ScheduleJob, ScheduleRun, CreateScheduleRequest } from './types'
 
 export const scheduleApi = {
   list: () =>
@@ -26,4 +26,10 @@ export const scheduleApi = {
 
   resume: (jobId: string) =>
     client.post<ApiResponse<null>>(`/api/schedule/${jobId}/resume`).then((r) => r.data.data),
+
+  runNow: (jobId: string) =>
+    client.post<ApiResponse<null>>(`/api/schedule/${jobId}/run`).then((r) => r.data.data),
+
+  runs: (limit = 20) =>
+    client.get<ApiResponse<ScheduleRun[]>>('/api/schedule/runs/recent', { params: { limit } }).then((r) => r.data.data),
 }

@@ -16,6 +16,13 @@ class WeChatDraftData(BaseModel):
     wechat_response: Optional[Dict[str, Any]] = Field(default=None, description="微信原始响应")
 
 
+class WeChatNewspicDraftData(BaseModel):
+    title: str = Field(..., description="WeChat newspic draft title")
+    media_id: str = Field(..., description="WeChat draft media_id")
+    image_media_ids: List[str] = Field(default_factory=list, description="Uploaded image media_id list")
+    wechat_response: Optional[Dict[str, Any]] = Field(default=None, description="Raw WeChat response")
+
+
 class WeChatArticleData(BaseModel):
     id: int
     source_record_id: Optional[int] = None

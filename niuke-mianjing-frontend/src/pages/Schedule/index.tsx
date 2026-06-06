@@ -15,7 +15,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { quickCrawlApi, scheduleApi } from '@/api'
 import type { CreateScheduleRequest, JobTreeItem, ScheduleJob } from '@/api/types'
 
@@ -150,6 +150,18 @@ const Schedule: React.FC = () => {
     }
   }
 
+  const handleControl = async (job: ScheduleJob, action: 'pause' | 'resume' | 'run') => {
+    try {
+      if (action === 'pause') await scheduleApi.pause(job.job_id)
+      if (action === 'resume') await scheduleApi.resume(job.job_id)
+      if (action === 'run') await scheduleApi.runNow(job.job_id)
+      message.success(action === 'run' ? '任务已开始执行' : action === 'pause' ? '任务已暂停' : '任务已恢复')
+      fetchJobs()
+    } catch (e: unknown) {
+      message.error((e as Error).message || '操作失败')
+    }
+  }
+
   const jobSummary = useMemo(() => {
     const active = jobs.filter((job) => job.next_run_time).length
     return `当前 ${jobs.length} 个任务，${active} 个有下次执行时间`
@@ -218,6 +230,41 @@ const Schedule: React.FC = () => {
       ),
     },
   ]
+
+  columns.splice(
+    columns.length - 1,
+    0,
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 90,
+      render: (value?: string) => (
+        <Tag color={value === 'paused' ? 'warning' : value === 'invalid' ? 'error' : 'success'}>
+          {value === 'paused' ? '已暂停' : value === 'invalid' ? '配置异常' : '运行中'}
+        </Tag>
+      ),
+    },
+    {
+      title: '控制',
+      key: 'control',
+      width: 180,
+      render: (_: unknown, record: ScheduleJob) => (
+        <Space size={4}>
+          <Button type="link" icon={<PlayCircleOutlined />} onClick={() => handleControl(record, 'run')}>
+            立即执行
+          </Button>
+          <Button
+            type="link"
+            icon={record.status === 'paused' ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
+            onClick={() => handleControl(record, record.status === 'paused' ? 'resume' : 'pause')}
+          >
+            {record.status === 'paused' ? '恢复' : '暂停'}
+          </Button>
+        </Space>
+      ),
+    },
+  )
 
   return (
     <div>

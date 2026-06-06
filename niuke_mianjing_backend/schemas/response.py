@@ -23,6 +23,9 @@ class JobItem(BaseModel):
     next_run_time: Optional[str] = Field(None, description="下次执行时间")
 
 
+    status: str = Field("active", description="active/paused/invalid")
+
+
 class CrawlLogItem(BaseModel):
     id: int
     post: str
