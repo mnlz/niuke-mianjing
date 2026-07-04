@@ -21,7 +21,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/api/review/overview",
         "/api/recruitment/sources",
         "/api/recruitment/tracks",
+        "/api/recruitment/recruitment-types",
         "/api/recruitment/jobs",
+        "/api/recruitment/job-interviews",
+        "/api/recruitment/track-interviews",
     }
     PUBLIC_PREFIXES = (
         "/api/logs/data/",

@@ -8,6 +8,9 @@ class LogService:
         self.niuke_repo = NiukeRepository()
         self.log_repo = CrawlLogRepository()
 
+    async def init_table(self):
+        await self.log_repo.init_table()
+
     async def get_crawl_logs(
         self,
         post: Optional[str] = None,

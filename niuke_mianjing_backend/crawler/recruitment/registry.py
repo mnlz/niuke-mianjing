@@ -2,11 +2,25 @@ from typing import Dict, Type
 
 from .base import RecruitmentAdapter
 from .bytedance import ByteDanceRecruitmentAdapter
+from .official_pages import (
+    AlibabaRecruitmentAdapter,
+    BaiduRecruitmentAdapter,
+    HuaweiRecruitmentAdapter,
+    JDRecruitmentAdapter,
+    KuaishouRecruitmentAdapter,
+    MeituanRecruitmentAdapter,
+)
 from .tencent import TencentRecruitmentAdapter
 
 
 ADAPTERS: Dict[str, Type[RecruitmentAdapter]] = {
+    AlibabaRecruitmentAdapter.source: AlibabaRecruitmentAdapter,
+    BaiduRecruitmentAdapter.source: BaiduRecruitmentAdapter,
     ByteDanceRecruitmentAdapter.source: ByteDanceRecruitmentAdapter,
+    HuaweiRecruitmentAdapter.source: HuaweiRecruitmentAdapter,
+    JDRecruitmentAdapter.source: JDRecruitmentAdapter,
+    KuaishouRecruitmentAdapter.source: KuaishouRecruitmentAdapter,
+    MeituanRecruitmentAdapter.source: MeituanRecruitmentAdapter,
     TencentRecruitmentAdapter.source: TencentRecruitmentAdapter,
 }
 

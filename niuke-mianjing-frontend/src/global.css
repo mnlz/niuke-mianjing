@@ -1144,7 +1144,7 @@ a {
 
 .source-switcher {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -1206,6 +1206,33 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
+}
+
+.recruitment-type-switcher {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border: 1px solid #dce7f4;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.recruitment-type-switcher button {
+  min-width: 72px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.recruitment-type-switcher button:hover,
+.recruitment-type-switcher button.active {
+  background: #1677ff;
+  color: #fff;
 }
 
 .job-track-switcher {
@@ -2395,10 +2422,15 @@ a {
 
   .jobs-hero-metrics,
   .source-switcher,
+  .recruitment-type-switcher,
   .job-track-switcher,
   .jobs-search,
   .job-grid {
     grid-template-columns: 1fr;
+  }
+
+  .recruitment-type-switcher {
+    display: grid;
   }
 
   .jobs-hero-metrics div + div {

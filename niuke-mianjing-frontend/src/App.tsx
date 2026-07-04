@@ -10,9 +10,11 @@ import { ADMIN_TOKEN_CHANGED_EVENT, clearAdminToken, getAdminToken } from '@/uti
 const PublicHome = lazy(() => import('@/pages/PublicHome'))
 const PublicInterviews = lazy(() => import('@/pages/PublicInterviews'))
 const PublicJobs = lazy(() => import('@/pages/PublicJobs'))
+const AIAnalysis = lazy(() => import('@/pages/AIAnalysis'))
 const Schedule = lazy(() => import('@/pages/Schedule'))
 const Logs = lazy(() => import('@/pages/Logs'))
 const Data = lazy(() => import('@/pages/Data'))
+const RecruitmentJobs = lazy(() => import('@/pages/RecruitmentJobs'))
 const QuickCrawl = lazy(() => import('@/pages/QuickCrawl'))
 const Cards = lazy(() => import('@/pages/Cards'))
 const Wechat = lazy(() => import('@/pages/Wechat'))
@@ -67,6 +69,7 @@ const AdminRoutes: React.FC = () => {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/data" element={<Data />} />
+          <Route path="/recruitment-jobs" element={<RecruitmentJobs />} />
           <Route path="/cards" element={<Cards />} />
           <Route path="/wechat" element={<Wechat />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
@@ -136,6 +139,14 @@ const App: React.FC = () => (
           element={
             <Suspense fallback={<Loading />}>
               <PublicJobs />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/ai-analysis"
+          element={
+            <Suspense fallback={<Loading />}>
+              <AIAnalysis />
             </Suspense>
           }
         />

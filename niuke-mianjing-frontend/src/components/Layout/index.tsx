@@ -11,6 +11,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SendOutlined,
+  SolutionOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -27,6 +28,7 @@ const menuItems = [
   { key: '/schedule', icon: <ClockCircleOutlined />, label: '定时任务' },
   { key: '/logs', icon: <FileSearchOutlined />, label: '爬取日志' },
   { key: '/data', icon: <DatabaseOutlined />, label: '面经数据' },
+  { key: '/recruitment-jobs', icon: <SolutionOutlined />, label: '岗位管理' },
   { key: '/cards', icon: <FileMarkdownOutlined />, label: '卡片工坊' },
   { key: '/wechat', icon: <SendOutlined />, label: '公众号工坊' },
 ]

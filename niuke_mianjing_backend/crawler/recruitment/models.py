@@ -11,10 +11,14 @@ class JobPosting(BaseModel):
     title: str
     category: Optional[str] = None
     job_family: Optional[str] = None
+    inferred_track: Optional[str] = None
+    inferred_track_name: Optional[str] = None
+    display_category: Optional[str] = None
     location: Optional[str] = None
     country: Optional[str] = None
     business_unit: Optional[str] = None
     product: Optional[str] = None
+    recruitment_type: str = "campus"
     employment_type: Optional[str] = None
     experience: Optional[str] = None
     description: str = ""

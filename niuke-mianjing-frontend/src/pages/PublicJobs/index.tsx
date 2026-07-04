@@ -13,13 +13,18 @@ import {
 } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { recruitmentApi } from '@/api'
-import type { RecruitmentJob, RecruitmentSource, RecruitmentTrack } from '@/api/types'
+import type { RecruitmentInterview, RecruitmentJob, RecruitmentSource, RecruitmentTrack, RecruitmentType } from '@/api/types'
+import { recruitmentSourceLogos, recruitmentTypeName, recruitmentTypeOptions } from '@/constants/recruitment'
 
 const { Paragraph, Text, Title } = Typography
 const PAGE_SIZE = 12
-const sourceLogos: Record<string, string> = {
-  bytedance: '/company-logos/字节跳动.svg',
-  tencent: '/company-logos/腾讯-01.svg',
+
+const jobCategoryLabel = (job: RecruitmentJob) =>
+  job.display_category || job.inferred_track_name || job.category || job.job_family || '综合岗位'
+
+const officialCategoryLabel = (job: RecruitmentJob) => {
+  const parts = [job.category, job.job_family].filter(Boolean)
+  return Array.from(new Set(parts)).join(' / ')
 }
 
 const formatDate = (value?: string | null) => {
@@ -50,10 +55,12 @@ const PublicJobs: React.FC = () => {
   const [tracks, setTracks] = useState<RecruitmentTrack[]>([])
   const [source, setSource] = useState(searchParams.get('source') || 'tencent')
   const [track, setTrack] = useState(searchParams.get('track') || '')
+  const [recruitmentType, setRecruitmentType] = useState<RecruitmentType>((searchParams.get('type') as RecruitmentType) || 'campus')
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
   const [queryKeyword, setQueryKeyword] = useState(searchParams.get('keyword') || '')
   const [jobs, setJobs] = useState<RecruitmentJob[]>([])
   const [selectedJob, setSelectedJob] = useState<RecruitmentJob | null>(null)
+  const [interviews, setInterviews] = useState<RecruitmentInterview[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, total: 0 })
 
@@ -61,14 +68,30 @@ const PublicJobs: React.FC = () => {
     () => sources.find((item) => item.source === source),
     [source, sources],
   )
+  const availableRecruitmentTypeOptions = useMemo(() => {
+    const supported = activeSource?.supported_recruitment_types
+    if (!supported?.length) return recruitmentTypeOptions
+    return recruitmentTypeOptions.filter((item) => supported.includes(item.value))
+  }, [activeSource])
+  const logoMap = useMemo(
+    () => Object.fromEntries(sources.map((item) => [item.source, item.logo || recruitmentSourceLogos[item.source]])),
+    [sources],
+  )
 
-  const loadJobs = async (page = 1, nextSource = source, nextKeyword = queryKeyword, nextTrack = track) => {
+  const loadJobs = async (
+    page = 1,
+    nextSource = source,
+    nextKeyword = queryKeyword,
+    nextTrack = track,
+    nextRecruitmentType = recruitmentType,
+  ) => {
     try {
       setLoading(true)
       const data = await recruitmentApi.jobs({
         source: nextSource,
         keyword: nextKeyword || undefined,
         track: nextKeyword ? undefined : nextTrack || undefined,
+        recruitment_type: nextRecruitmentType,
         page,
         page_size: PAGE_SIZE,
       })
@@ -85,15 +108,28 @@ const PublicJobs: React.FC = () => {
   const search = () => {
     const value = keyword.trim()
     setQueryKeyword(value)
-    setSearchParams({ source, ...(track ? { track } : {}), ...(value ? { keyword: value } : {}) })
-    void loadJobs(1, source, value, track)
+    setSearchParams({ source, type: recruitmentType, ...(track ? { track } : {}), ...(value ? { keyword: value } : {}) })
+    void loadJobs(1, source, value, track, recruitmentType)
   }
 
   const changeSource = (nextSource: string) => {
+    const nextSourceMeta = sources.find((item) => item.source === nextSource)
+    const supportedTypes = nextSourceMeta?.supported_recruitment_types || []
+    const nextRecruitmentType = supportedTypes.length && !supportedTypes.includes(recruitmentType)
+      ? supportedTypes[0]
+      : recruitmentType
     setSource(nextSource)
+    setRecruitmentType(nextRecruitmentType)
     setPagination((prev) => ({ ...prev, current: 1 }))
-    setSearchParams({ source: nextSource, ...(track ? { track } : {}), ...(queryKeyword ? { keyword: queryKeyword } : {}) })
-    void loadJobs(1, nextSource, queryKeyword, track)
+    setSearchParams({ source: nextSource, type: nextRecruitmentType, ...(track ? { track } : {}), ...(queryKeyword ? { keyword: queryKeyword } : {}) })
+    void loadJobs(1, nextSource, queryKeyword, track, nextRecruitmentType)
+  }
+
+  const changeRecruitmentType = (nextType: RecruitmentType) => {
+    setRecruitmentType(nextType)
+    setPagination((prev) => ({ ...prev, current: 1 }))
+    setSearchParams({ source, type: nextType, ...(track ? { track } : {}), ...(queryKeyword ? { keyword: queryKeyword } : {}) })
+    void loadJobs(1, source, queryKeyword, track, nextType)
   }
 
   const changeTrack = (nextTrack: string) => {
@@ -101,8 +137,8 @@ const PublicJobs: React.FC = () => {
     setKeyword('')
     setQueryKeyword('')
     setPagination((prev) => ({ ...prev, current: 1 }))
-    setSearchParams({ source, ...(nextTrack ? { track: nextTrack } : {}) })
-    void loadJobs(1, source, '', nextTrack)
+    setSearchParams({ source, type: recruitmentType, ...(nextTrack ? { track: nextTrack } : {}) })
+    void loadJobs(1, source, '', nextTrack, recruitmentType)
   }
 
   useEffect(() => {
@@ -110,6 +146,31 @@ const PublicJobs: React.FC = () => {
     recruitmentApi.tracks().then(setTracks).catch(() => setTracks([]))
     void loadJobs(1)
   }, [])
+
+  useEffect(() => {
+    const supportedTypes = activeSource?.supported_recruitment_types || []
+    if (!supportedTypes.length || supportedTypes.includes(recruitmentType)) return
+    const nextRecruitmentType = supportedTypes[0]
+    setRecruitmentType(nextRecruitmentType)
+    setPagination((prev) => ({ ...prev, current: 1 }))
+    setSearchParams({ source, type: nextRecruitmentType, ...(track ? { track } : {}), ...(queryKeyword ? { keyword: queryKeyword } : {}) })
+    void loadJobs(1, source, queryKeyword, track, nextRecruitmentType)
+  }, [activeSource, recruitmentType])
+
+  useEffect(() => {
+    if (!selectedJob?.source_job_id || !selectedJob.recruitment_type) {
+      setInterviews([])
+      return
+    }
+    recruitmentApi
+      .interviews({
+        source: selectedJob.source,
+        recruitment_type: selectedJob.recruitment_type,
+        source_job_id: selectedJob.source_job_id,
+      })
+      .then((data) => setInterviews(data || []))
+      .catch(() => setInterviews([]))
+  }, [selectedJob])
 
   return (
     <div className="public-page jobs-page">
@@ -121,6 +182,7 @@ const PublicJobs: React.FC = () => {
         <nav>
           <Button type="text" icon={<HomeOutlined />} onClick={() => navigate('/')}>首页</Button>
           <Button type="text" onClick={() => navigate('/interviews')}>面经库</Button>
+          <Button type="text" onClick={() => navigate('/ai-analysis')}>AI 分析</Button>
           <Button type="primary" onClick={() => navigate('/jobs')}>职位雷达</Button>
         </nav>
       </header>
@@ -149,11 +211,22 @@ const PublicJobs: React.FC = () => {
                 className={source === item.source ? 'active' : ''}
                 onClick={() => changeSource(item.source)}
               >
-                <span><img src={sourceLogos[item.source]} alt={`${item.company} logo`} /></span>
+                <span><img src={item.logo || recruitmentSourceLogos[item.source]} alt={`${item.company} logo`} /></span>
                 <div>
                   <b>{item.company}</b>
                   <small>{item.description}</small>
                 </div>
+              </button>
+            ))}
+          </div>
+          <div className="recruitment-type-switcher">
+            {availableRecruitmentTypeOptions.map((item) => (
+              <button
+                key={item.value}
+                className={recruitmentType === item.value ? 'active' : ''}
+                onClick={() => changeRecruitmentType(item.value)}
+              >
+                {item.label}
               </button>
             ))}
           </div>
@@ -186,6 +259,8 @@ const PublicJobs: React.FC = () => {
           <div className="jobs-result-meta">
             <Text>当前展示 <b>{activeSource?.company || source}</b> 的公开岗位</Text>
             <Text type="secondary">
+              {recruitmentTypeName(recruitmentType)}
+              {' · '}
               {queryKeyword ? `关键词：${queryKeyword}` : track ? `方向：${tracks.find((item) => item.id === track)?.name || track}` : '全部岗位'}
               {' '}· 共 {pagination.total.toLocaleString()} 条
             </Text>
@@ -204,9 +279,12 @@ const PublicJobs: React.FC = () => {
               <button className="job-card" key={`${job.source}-${job.source_job_id}`} onClick={() => setSelectedJob(job)}>
                 <div className="job-card-top">
                   <span className={`job-company-mark ${job.source}`}>
-                    <img src={sourceLogos[job.source]} alt={`${job.company} logo`} />
+                    <img src={logoMap[job.source] || recruitmentSourceLogos[job.source]} alt={`${job.company} logo`} />
                   </span>
-                  <Tag color="blue">{job.category || job.job_family || '综合岗位'}</Tag>
+                  <Space size={6}>
+                    <Tag color="blue">{jobCategoryLabel(job)}</Tag>
+                    <Tag>{recruitmentTypeName(job.recruitment_type)}</Tag>
+                  </Space>
                 </div>
                 <h2>{job.title}</h2>
                 <div className="job-card-meta">
@@ -252,11 +330,13 @@ const PublicJobs: React.FC = () => {
           <article className="job-detail">
             <div className="job-detail-hero">
               <div className={`job-company-mark large ${selectedJob.source}`}>
-                <img src={sourceLogos[selectedJob.source]} alt={`${selectedJob.company} logo`} />
+                <img src={logoMap[selectedJob.source] || recruitmentSourceLogos[selectedJob.source]} alt={`${selectedJob.company} logo`} />
               </div>
               <Space size={8} wrap>
                 <Tag color="blue">{selectedJob.company}</Tag>
-                <Tag>{selectedJob.category || selectedJob.job_family || '综合岗位'}</Tag>
+                <Tag>{recruitmentTypeName(selectedJob.recruitment_type)}</Tag>
+                <Tag>{jobCategoryLabel(selectedJob)}</Tag>
+                {officialCategoryLabel(selectedJob) && <Tag>官方：{officialCategoryLabel(selectedJob)}</Tag>}
                 <Tag>{selectedJob.location || selectedJob.country || '地点面议'}</Tag>
               </Space>
               <h1>{selectedJob.title}</h1>
@@ -276,6 +356,20 @@ const PublicJobs: React.FC = () => {
             <section>
               <h2>任职要求</h2>
               {renderTextBlocks(selectedJob.requirements)}
+            </section>
+            <section>
+              <h2>过往面试</h2>
+              {interviews.length ? (
+                <div className="job-interview-list">
+                  {interviews.map((item) => (
+                    <Button key={item.id} type="link" href={item.content_id ? `https://www.nowcoder.com/discuss/${item.content_id}` : undefined} target="_blank">
+                      {item.title} <Text type="secondary">· {item.post || '面经'} · {item.edit_time || ''}</Text>
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂未匹配到该岗位相关面经" />
+              )}
             </section>
             {selectedJob.preferred_qualifications && (
               <section>

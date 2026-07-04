@@ -3,12 +3,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from niuke_mianjing_backend.api.deps import get_review_service, get_schedule_service, get_wechat_service
+from niuke_mianjing_backend.api.deps import get_log_service, get_review_service, get_schedule_service, get_wechat_service
 from niuke_mianjing_backend.api.middleware.auth import AuthMiddleware
 from niuke_mianjing_backend.api.middleware.error_handler import AppException, app_exception_handler, generic_exception_handler
 from niuke_mianjing_backend.api.routes import auth, crawl, logs, recruitment, review, schedule, wechat, ws
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.database import DatabasePool
+from niuke_mianjing_backend.repositories.recruitment_job_repo import RecruitmentJobRepository
 
 
 @asynccontextmanager
@@ -20,6 +21,10 @@ async def lifespan(app: FastAPI):
     await schedule_service.init_table()
     print("定时任务表初始化完成")
 
+    log_service = get_log_service()
+    await log_service.init_table()
+    print("爬取日志表初始化完成")
+
     wechat_service = get_wechat_service()
     await wechat_service.init_table()
     print("微信公众号稿件表初始化完成")
@@ -27,6 +32,10 @@ async def lifespan(app: FastAPI):
     review_service = get_review_service()
     await review_service.init_tables()
     print("面经复习表初始化完成")
+
+    recruitment_repo = RecruitmentJobRepository()
+    await recruitment_repo.init_table()
+    print("官方招聘岗位表初始化完成")
 
     schedule_service.start()
     await schedule_service.restore_jobs()

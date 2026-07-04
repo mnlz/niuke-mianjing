@@ -18,6 +18,13 @@ from PIL import Image, ImageDraw
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.wechat_article_repo import WeChatArticleRepository
+from niuke_mianjing_backend.services.openai_client import (
+    chat_completions_url,
+    ensure_openai_configured,
+    extract_chat_completion_text,
+    image_generations_url,
+    openai_headers,
+)
 from niuke_mianjing_backend.services.wechat_api_client import (
     get_token,
     push_draft,
@@ -221,50 +228,13 @@ class WeChatService:
         content_type: str = "single_interpretation",
         wechat_theme: Optional[str] = None,
     ) -> Generator[Dict[str, Any], None, None]:
-        payload = {
-            "model": settings.OPENAI_TEXT_MODEL,
-            "stream": True,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是一个中文技术公众号主编。只输出微信公众号 HTML，不要输出解释或 Markdown 代码块。"
-                        "文章要像真人编辑写的，有判断、有取舍、有具体复习建议。"
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-        }
-        response = requests.post(
-            self._chat_completions_url(),
-            headers=self._openai_headers(),
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            stream=True,
-            timeout=(10, 240),
+        system_prompt = (
+            "你是一个中文技术公众号主编。只输出微信公众号 HTML，不要输出解释或 Markdown 代码块。"
+            "文章要像真人编辑写的，有判断、有取舍、有具体复习建议。"
         )
-        if response.status_code >= 400:
-            raise ValueError(f"OpenAI 流式生成失败：{response.text[:1000]}")
-
         full_text = ""
         yield {"type": "meta", "title": article_title}
-        response.encoding = "utf-8"
-        for raw_line in response.iter_lines(decode_unicode=False):
-            line = raw_line.decode("utf-8", errors="replace")
-            if not line:
-                continue
-            if line.startswith("data:"):
-                payload = line[5:].strip()
-            else:
-                payload = line.strip()
-            if payload == "[DONE]":
-                break
-            try:
-                data = json.loads(payload)
-            except json.JSONDecodeError:
-                continue
-            delta = self._extract_stream_delta(data)
-            if not delta:
-                continue
+        for delta in self._stream_openai_text(system_prompt, prompt, "OpenAI 流式生成失败"):
             full_text += delta
             yield {"type": "delta", "delta": delta}
 
@@ -272,50 +242,13 @@ class WeChatService:
         yield {"type": "done", "title": article_title, "html": html}
 
     def stream_prompt_markdown(self, prompt: str, article_title: str) -> Generator[Dict[str, Any], None, None]:
-        payload = {
-            "model": settings.OPENAI_TEXT_MODEL,
-            "stream": True,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是一个中文技术公众号主编。只输出 Markdown 正文，不要输出 HTML，不要输出解释。"
-                        "文章要像真人编辑写的，有判断、有取舍、有具体复习建议，少一点 AI 腔。"
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-        }
-        response = requests.post(
-            self._chat_completions_url(),
-            headers=self._openai_headers(),
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            stream=True,
-            timeout=(10, 240),
+        system_prompt = (
+            "你是一个中文技术公众号主编。只输出 Markdown 正文，不要输出 HTML，不要输出解释。"
+            "文章要像真人编辑写的，有判断、有取舍、有具体复习建议，少一点 AI 腔。"
         )
-        if response.status_code >= 400:
-            raise ValueError(f"OpenAI 流式生成 Markdown 失败：{response.text[:1000]}")
-
         full_text = ""
         yield {"type": "meta", "title": article_title}
-        response.encoding = "utf-8"
-        for raw_line in response.iter_lines(decode_unicode=False):
-            line = raw_line.decode("utf-8", errors="replace")
-            if not line:
-                continue
-            if line.startswith("data:"):
-                payload = line[5:].strip()
-            else:
-                payload = line.strip()
-            if payload == "[DONE]":
-                break
-            try:
-                data = json.loads(payload)
-            except json.JSONDecodeError:
-                continue
-            delta = self._extract_stream_delta(data)
-            if not delta:
-                continue
+        for delta in self._stream_openai_text(system_prompt, prompt, "OpenAI 流式生成 Markdown 失败"):
             full_text += delta
             yield {"type": "delta", "delta": delta}
 
@@ -630,14 +563,10 @@ class WeChatService:
         }
 
     def _ensure_openai_configured(self):
-        if not settings.OPENAI_API_KEY:
-            raise ValueError("请先在 .env 配置 OPENAI_API_KEY")
+        ensure_openai_configured()
 
     def _openai_headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-            "Content-Type": "application/json; charset=utf-8",
-        }
+        return openai_headers()
 
     def _generate_article_json(self, prompt: str) -> Dict[str, str]:
         payload = {
@@ -695,45 +624,58 @@ class WeChatService:
 
     @staticmethod
     def _chat_completions_url() -> str:
-        url = (settings.OPENAI_CHAT_COMPLETIONS_URL or "").strip()
-        if url:
-            return url
-
-        base_url = settings.OPENAI_BASE_URL.rstrip("/")
-        if base_url.endswith("/chat/completions"):
-            return base_url
-        return f"{base_url}/chat/completions"
+        return chat_completions_url()
 
     @staticmethod
     def _image_generations_url() -> str:
-        if settings.OPENAI_IMAGE_GENERATIONS_URL:
-            return settings.OPENAI_IMAGE_GENERATIONS_URL
-
-        chat_url = WeChatService._chat_completions_url().rstrip("/")
-        if chat_url.endswith("/chat/completions"):
-            return f"{chat_url.removesuffix('/chat/completions')}/images/generations"
-        return f"{settings.OPENAI_BASE_URL.rstrip('/')}/images/generations"
+        return image_generations_url()
 
     @staticmethod
     def _extract_chat_completion_text(data: Dict[str, Any]) -> str:
-        choices = data.get("choices") or []
-        if not choices:
-            raise ValueError(f"OpenAI 返回缺少 choices：{data}")
+        return extract_chat_completion_text(data)
 
-        message = choices[0].get("message") or {}
-        content = message.get("content")
-        if isinstance(content, str):
-            return content.strip()
-        if isinstance(content, list):
-            chunks = []
-            for item in content:
-                if isinstance(item, dict) and item.get("text"):
-                    chunks.append(item["text"])
-                elif isinstance(item, str):
-                    chunks.append(item)
-            return "\n".join(chunks).strip()
+    def _stream_openai_text(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        error_prefix: str,
+    ) -> Generator[str, None, None]:
+        payload = {
+            "model": settings.OPENAI_TEXT_MODEL,
+            "stream": True,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        }
+        response = requests.post(
+            self._chat_completions_url(),
+            headers=self._openai_headers(),
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            stream=True,
+            timeout=(10, 240),
+        )
+        if response.status_code >= 400:
+            raise ValueError(f"{error_prefix}：{response.text[:1000]}")
 
-        raise ValueError(f"OpenAI 返回内容为空：{data}")
+        response.encoding = "utf-8"
+        for raw_line in response.iter_lines(decode_unicode=False):
+            line = raw_line.decode("utf-8", errors="replace")
+            if not line:
+                continue
+            if line.startswith("data:"):
+                payload_text = line[5:].strip()
+            else:
+                payload_text = line.strip()
+            if payload_text == "[DONE]":
+                break
+            try:
+                data = json.loads(payload_text)
+            except json.JSONDecodeError:
+                continue
+            delta = self._extract_stream_delta(data)
+            if delta:
+                yield delta
 
     @staticmethod
     def _extract_stream_delta(data: Dict[str, Any]) -> str:

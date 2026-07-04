@@ -185,7 +185,11 @@ export interface RecruitmentSource {
   source: string
   company: string
   description: string
+  logo?: string
+  supported_recruitment_types?: RecruitmentType[]
 }
+
+export type RecruitmentType = 'campus' | 'intern' | 'social'
 
 export interface RecruitmentTrack {
   id: string
@@ -201,10 +205,14 @@ export interface RecruitmentJob {
   title: string
   category?: string | null
   job_family?: string | null
+  inferred_track?: string | null
+  inferred_track_name?: string | null
+  display_category?: string | null
   location?: string | null
   country?: string | null
   business_unit?: string | null
   product?: string | null
+  recruitment_type?: RecruitmentType
   employment_type?: string | null
   experience?: string | null
   description: string
@@ -220,6 +228,7 @@ export interface RecruitmentJobPage {
   source: string
   company: string
   track?: string | null
+  recruitment_type?: RecruitmentType
   keywords?: string[]
   items: RecruitmentJob[]
   page: number
@@ -227,6 +236,44 @@ export interface RecruitmentJobPage {
   total: number
   has_more: boolean
   cached: boolean
+}
+
+export interface RecruitmentVersion {
+  source: string
+  recruitment_type: RecruitmentType
+  refresh_version?: string | null
+  job_count: number
+  refresh_started_at?: string | null
+  synced_at?: string | null
+}
+
+export interface RecruitmentRefreshResult {
+  refresh_version: string
+  started_at: string
+  total_jobs: number
+  results: Array<{
+    source: string
+    recruitment_type: RecruitmentType
+    status: 'success' | 'failed'
+    job_count: number
+    error?: string
+  }>
+}
+
+export interface RecruitmentInterview {
+  id: number
+  content_id?: string | null
+  title: string
+  edit_time?: string | null
+  read?: number | null
+  post?: string | null
+  company: string
+  status: number
+}
+
+export interface RecruitmentAIReportResult {
+  report: string
+  model: string
 }
 
 export type CardTheme = 'xiaohongshu' | 'bytedance' | 'alibaba' | 'minimal' | 'business'

@@ -83,6 +83,7 @@ const PublicHome: React.FC = () => {
         <nav>
           <Button type="text" onClick={() => navigate('/interviews')}>面经库</Button>
           <Button type="text" onClick={() => navigate('/jobs')}>职位雷达</Button>
+          <Button type="text" onClick={() => navigate('/ai-analysis')}>AI 分析</Button>
           <Button type="text" onClick={() => navigate('/admin')}>后台入口</Button>
           <Button type="primary" onClick={() => navigate('/interviews')}>立即开始</Button>
         </nav>
@@ -110,7 +111,7 @@ const PublicHome: React.FC = () => {
           <section className="premium-data-strip">
             <div><strong>{stats?.total_records?.toLocaleString() || '-'}</strong><span>真实面经</span></div>
             <div><strong>{topPosts.length || '-'}</strong><span>热门方向</span></div>
-            <div><strong>2</strong><span>招聘官网数据源</span></div>
+            <div><strong>8</strong><span>招聘官网数据源</span></div>
             <div><strong>24h</strong><span>持续更新情报</span></div>
           </section>
 

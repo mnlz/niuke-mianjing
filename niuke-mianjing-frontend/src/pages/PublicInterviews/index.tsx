@@ -352,6 +352,8 @@ const PublicInterviews: React.FC = () => {
         </button>
         <nav>
           <Button type="text" icon={<HomeOutlined />} onClick={() => navigate('/')}>首页</Button>
+          <Button type="text" onClick={() => navigate('/jobs')}>职位雷达</Button>
+          <Button type="text" onClick={() => navigate('/ai-analysis')}>AI 分析</Button>
           <Button type="primary" onClick={() => navigate('/admin')}>后台入口</Button>
         </nav>
       </header>
