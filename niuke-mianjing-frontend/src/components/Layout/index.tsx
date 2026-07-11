@@ -37,7 +37,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const { connected, progresses } = useCrawlStore()
+  const connected = useCrawlStore((s) => s.connected)
+  const progresses = useCrawlStore((s) => s.progresses)
   useWebSocket()
 
   const runningCount = useMemo(

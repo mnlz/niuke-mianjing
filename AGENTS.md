@@ -6,7 +6,7 @@
 
 - 项目名称：`niuke-mianjing`
 - 当前产品名：`OfferLens`
-- 主要用途：牛客面经采集、面经数据管理、复习进度、卡片生成、微信公众号内容生成，以及官方招聘岗位雷达。
+- 主要用途：牛客面经采集、面经数据管理、复习进度、卡片和微信公众号内容生成，以及官方招聘岗位雷达、岗位版本管理和 AI 求职分析。
 - 技术栈：
   - 后端：Python、FastAPI、Pydantic v2、aiomysql、APScheduler、requests、BeautifulSoup。
   - 前端：React 18、TypeScript、Vite、Ant Design、Axios、Zustand、React Router。
@@ -25,6 +25,7 @@
 ├── .env.example                    # 环境变量示例
 ├── deploy/                         # GitHub Actions / 服务器部署说明
 ├── job-list/                       # 手工或临时岗位抓取结果，当前包含 ali、jd 子目录
+├── tests/                          # 后端轻量回归检查
 ├── niuke_mianjing_backend/         # 后端代码
 └── niuke-mianjing-frontend/        # 前端代码
 ```
@@ -113,10 +114,17 @@ npm run dev
 .venv/bin/python -m compileall -q niuke_mianjing_backend main.py
 ```
 
-前端构建：
+后端现有回归检查（当前项目未在 `requirements.txt` 中声明 `pytest`）：
+
+```bash
+.venv/bin/python tests/test_company_extractor.py
+```
+
+前端测试与构建：
 
 ```bash
 cd niuke-mianjing-frontend
+npm test
 npm run build
 ```
 
@@ -140,6 +148,7 @@ niuke_mianjing_backend/
 ├── api/
 │   ├── app.py                      # FastAPI app、生命周期、路由注册、中间件
 │   ├── deps.py                     # 服务依赖单例
+│   ├── security.py                 # 后台 token 签发与校验
 │   ├── middleware/
 │   │   ├── auth.py                 # 后台鉴权中间件
 │   │   └── error_handler.py        # 统一异常处理
@@ -161,7 +170,7 @@ niuke_mianjing_backend/
 │   ├── niuke_manager.py
 │   └── recruitment/                # 官方招聘官网适配器
 ├── repositories/                   # MySQL 仓库层
-├── services/                       # 业务服务层
+├── services/                       # 业务服务层，含爬取、调度、复习、招聘 AI、微信工坊
 ├── schemas/                        # API 请求/响应模型
 └── utils/                          # 清洗、提取、岗位映射等工具
 ```
@@ -175,7 +184,7 @@ niuke_mianjing_backend/
 3. 初始化爬取日志表。
 4. 初始化微信公众号稿件表。
 5. 初始化面经复习相关表。
-6. 初始化官方招聘岗位表。
+6. 初始化官方招聘岗位表和刷新记录表。
 7. 启动 APScheduler 并恢复定时任务。
 
 应用关闭时会停止调度器并关闭数据库连接池。
@@ -199,7 +208,10 @@ niuke_mianjing_backend/
 - `/api/review/overview`
 - `/api/recruitment/sources`
 - `/api/recruitment/tracks`
+- `/api/recruitment/recruitment-types`
 - `/api/recruitment/jobs`
+- `/api/recruitment/job-interviews`
+- `/api/recruitment/track-interviews`
 - `/api/logs/data/*`
 - `/api/review/progress/*`
 
@@ -255,6 +267,21 @@ niuke_mianjing_backend/
 - `GET /api/schedule/runs/recent`：最近运行记录。
 - `POST /api/schedule/crawl-now`：立即爬取。
 
+### 官方招聘与 AI 求职分析
+
+- `GET /api/recruitment/sources`：招聘来源及支持的招聘类型。
+- `GET /api/recruitment/tracks`：岗位方向。
+- `GET /api/recruitment/recruitment-types`：校招、实习和社招类型。
+- `GET /api/recruitment/jobs`：查询数据库中当前最新批次岗位。
+- `GET /api/recruitment/job-interviews`：查询单个岗位的关联面经。
+- `GET /api/recruitment/track-interviews`：查询公司和岗位方向的关联面经。
+- `GET /api/recruitment/versions`：查询各来源、招聘类型的最新岗位版本。
+- `POST /api/recruitment/refresh`：从官网抓取岗位，以新版本落库并切换 `is_latest`。
+- `POST /api/recruitment/resume/parse`：解析 PDF 简历，最大 8 MB，最多读取前 12 页。
+- `POST /api/recruitment/ai-report`：生成岗位画像、公司对比、岗位与面经联合分析或完整求职报告。
+
+其中 `sources`、`tracks`、`recruitment-types`、`jobs`、`job-interviews` 和 `track-interviews` 为公开接口；`versions`、`refresh`、`resume/parse` 和 `ai-report` 需要管理员 token。
+
 ### 微信公众号
 
 核心能力包括：
@@ -306,6 +333,7 @@ niuke_mianjing_backend/
 - `review_progress`：面经复习进度。
 - `review_ai_reviews`：AI 复盘结果。
 - `official_recruitment_jobs`：官方招聘岗位数据。
+- `official_recruitment_refresh_runs`：官方岗位刷新版本的执行状态、数量和错误。
 
 ### 官方招聘岗位表
 
@@ -338,6 +366,8 @@ niuke_mianjing_backend/
 - `source_url`：官网详情链接。
 - `detail_status`：`complete` 或 `missing_detail`。
 - `raw_json`：完整标准化岗位 JSON。
+- `refresh_version` / `refresh_started_at`：本条岗位对应的刷新批次。
+- `is_latest`：是否属于该来源和招聘类型的最新版本。
 - `updated_at` / `crawled_at` / `created_at` / `synced_at`。
 
 唯一键：
@@ -346,13 +376,23 @@ niuke_mianjing_backend/
 UNIQUE KEY `uk_official_job` (`source`, `source_job_id`, `recruitment_type`)
 ```
 
-接口 `/api/recruitment/jobs` 每次返回岗位后会调用 `RecruitmentJobRepository.upsert_many()` 自动落库。
+岗位数据流：
+
+1. 管理端调用 `POST /api/recruitment/refresh`。
+2. 适配器抓取官网数据并补全详情。
+3. `RecruitmentJobRepository.upsert_many()` 写入 `refresh_version` 和刷新时间。
+4. `mark_latest_version()` 只标记新版本为 `is_latest=1`。
+5. 公开端 `GET /api/recruitment/jobs` 只读取数据库中当前最新版本，不在请求链路中实时访问招聘官网。
 
 ## 官方招聘岗位雷达
 
 后端路由：`niuke_mianjing_backend/api/routes/recruitment.py`
 
-前端页面：`niuke-mianjing-frontend/src/pages/PublicJobs/index.tsx`
+公开岗位页：`niuke-mianjing-frontend/src/pages/PublicJobs/index.tsx`
+
+AI 求职分析页：`niuke-mianjing-frontend/src/pages/AIAnalysis/index.tsx`
+
+后台岗位管理页：`niuke-mianjing-frontend/src/pages/RecruitmentJobs/index.tsx`
 
 前端 API：`niuke-mianjing-frontend/src/api/recruitment.ts`
 
@@ -423,7 +463,13 @@ UNIQUE KEY `uk_official_job` (`source`, `source_job_id`, `recruitment_type`)
 - `GET /api/recruitment/sources`
 - `GET /api/recruitment/tracks`
 - `GET /api/recruitment/recruitment-types`
+- `GET /api/recruitment/versions`
 - `GET /api/recruitment/jobs`
+- `GET /api/recruitment/job-interviews`
+- `GET /api/recruitment/track-interviews`
+- `POST /api/recruitment/refresh`
+- `POST /api/recruitment/resume/parse`
+- `POST /api/recruitment/ai-report`
 
 `/api/recruitment/jobs` 常用参数：
 
@@ -459,12 +505,14 @@ niuke-mianjing-frontend/
     │   ├── PublicHome/             # 前台首页
     │   ├── PublicInterviews/       # 公开面经
     │   ├── PublicJobs/             # 官方招聘岗位雷达
+    │   ├── AIAnalysis/             # AI 求职分析
     │   ├── AdminLogin/             # 后台登录
     │   ├── Dashboard/              # 后台首页
     │   ├── QuickCrawl/             # 快速爬取
     │   ├── Schedule/               # 定时任务
     │   ├── Logs/                   # 爬取日志
     │   ├── Data/                   # 面经数据
+    │   ├── RecruitmentJobs/        # 岗位版本与刷新管理
     │   ├── Cards/                  # 卡片工坊
     │   └── Wechat/                 # 公众号工坊
     ├── store/                      # Zustand 状态
@@ -478,6 +526,7 @@ niuke-mianjing-frontend/
 - `/`：公开首页。
 - `/interviews`：公开面经。
 - `/jobs`：官方招聘岗位雷达。
+- `/ai-analysis`：基于岗位、面经和简历生成 AI 求职分析。
 - `/admin-login`：后台登录。
 
 后台页面：
@@ -487,6 +536,7 @@ niuke-mianjing-frontend/
 - `/schedule`：定时任务。
 - `/logs`：爬取日志。
 - `/data`：面经数据。
+- `/recruitment-jobs`：官方岗位管理与手动刷新。
 - `/cards`：卡片工坊。
 - `/wechat`：公众号工坊。
 
@@ -540,6 +590,18 @@ AI 配置来自：
 - `OPENAI_CHAT_COMPLETIONS_URL`
 - `OPENAI_TEXT_MODEL`
 
+## 招聘 AI 分析
+
+核心文件：
+
+- `niuke_mianjing_backend/api/routes/recruitment.py`
+- `niuke_mianjing_backend/services/recruitment_ai.py`
+- `niuke_mianjing_backend/services/openai_client.py`
+- `niuke_mianjing_backend/repositories/recruitment_job_repo.py`
+- `niuke_mianjing_backend/repositories/niuke_repo.py`
+
+分析时优先读取 `official_recruitment_jobs` 中最新版本的岗位详情，再用公司、岗位方向和标题关键词从 `niuke_data` 匹配相关面经。`full` 报告还会合并用户上传 PDF 中解析出的简历文本。
+
 ## 微信公众号工坊
 
 核心文件：
@@ -549,6 +611,7 @@ AI 配置来自：
 - `niuke_mianjing_backend/services/wechat_formatter.py`
 - `niuke_mianjing_backend/services/wechat_prompts.py`
 - `niuke_mianjing_backend/services/wechat_api_client.py`
+- `niuke_mianjing_backend/services/wechat_media.py`
 - `niuke_mianjing_backend/resources/raphael_themes.json`
 
 能力：
@@ -609,12 +672,16 @@ GitHub Secrets：
 - 前端后台页需要考虑管理员 token 校验。
 - `.env` 不提交；`.env.example` 只放占位值。
 - 修改招聘分类时，要同步关注后端排序结果和前端展示标签。
+- 修改招聘落库逻辑时，要同时检查 `refresh_version`、`is_latest`、`official_recruitment_refresh_runs` 和后台岗位管理页。
+- 新增或修改前端纯函数时，优先把回归用例放在 `niuke-mianjing-frontend/scripts/` 并纳入 `npm test`。
 
 ## 当前注意事项
 
-- 工作区当前已有多处前端和招聘模块改动，继续开发前先看 `git status` 和相关 diff，避免误回滚用户已有修改。
+- 工作区当前已有多处前后端重构改动和新增文件，继续开发前先看 `git status` 和相关 diff，避免误回滚用户已有修改。
 - 百度招聘源用户已明确说可以暂时不管，排查公司遗漏时优先看腾讯、阿里、京东、快手、华为、美团、字节。
 - 阿里当前主要只有实习批次；用户确认过阿里 cookies 里的几个参数暂时固定，`SESSION/XSRF` 可以先写死，只要还能请求到数据。
-- 官方招聘岗位详情数据已经落库到 `official_recruitment_jobs`，后续 AI 分析应优先使用数据库中的 `description`、`requirements` 和 `raw_json`。
-- `/api/recruitment/jobs` 的返回中 `persisted_count` 来自 MySQL upsert affected rows，更新已有记录时可能大于本页岗位条数。
-- 招聘接口会做 5 分钟内存缓存，分类逻辑变更后可调整 `CLASSIFICATION_CACHE_VERSION` 使缓存失效。
+- 官方招聘岗位详情数据已经落库到 `official_recruitment_jobs`；当前 AI 报告使用数据库查询结果中的 `description` 和 `requirements`，`raw_json` 主要用于追溯和后续重新分析。
+- `/api/recruitment/jobs` 是数据库只读查询；官网抓取和 upsert 只在受保护的 `/api/recruitment/refresh` 执行。
+- 岗位刷新以 `jobs-YYYYMMDDHHMMSS` 生成版本号，某个来源或类型刷新失败时会在 `official_recruitment_refresh_runs` 记录错误，不应将该失败批次当作最新数据。
+- `recruitment.py` 中仍保留一套带 5 分钟缓存的官网查询辅助函数，但当前 `GET /api/recruitment/jobs` 不会调用它；不要把该死路径误认为线上数据流。
+- 当前工作区还在进行大文件拆分：前端新增 ErrorBoundary、通用数据 hooks、Wechat panes 和页面纯函数，后端新增 `wechat_media.py` 与 `utils/logger.py`。继续修改前先查看未提交 diff。

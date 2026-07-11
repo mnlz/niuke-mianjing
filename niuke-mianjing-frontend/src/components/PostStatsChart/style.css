@@ -1,0 +1,149 @@
+.post-stats-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.post-stats-chart__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+}
+
+.post-stats-chart__total {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.post-stats-chart__total strong {
+  color: #0f172a;
+  font-weight: 700;
+  margin: 0 2px;
+}
+
+.post-stats-chart__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.post-stats-chart__tag {
+  margin: 0 !important;
+  border-radius: 10px !important;
+  padding: 2px 10px !important;
+  font-size: 12px !important;
+  line-height: 18px !important;
+  border: none !important;
+}
+
+.post-stats-chart__tag--0 {
+  background: #1677ff !important;
+  color: #ffffff !important;
+}
+
+.post-stats-chart__tag--1 {
+  background: rgba(22, 119, 255, 0.16) !important;
+  color: #1677ff !important;
+}
+
+.post-stats-chart__tag--2 {
+  background: rgba(22, 119, 255, 0.08) !important;
+  color: #4096ff !important;
+}
+
+.post-stats-chart__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.post-stats-chart__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.post-stats-chart__body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.post-stats-chart__row {
+  display: grid;
+  grid-template-columns: 96px 1fr 88px;
+  align-items: center;
+  gap: 12px;
+  height: 28px;
+}
+
+.post-stats-chart__label {
+  font-size: 13px;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-stats-chart__track {
+  position: relative;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.post-stats-chart__bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #91caff, #69b1ff);
+}
+
+.post-stats-chart__row--top .post-stats-chart__bar {
+  background: linear-gradient(90deg, #1677ff, #4096ff);
+}
+
+.post-stats-chart__row--top .post-stats-chart__label {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.post-stats-chart__row--rest .post-stats-chart__bar {
+  background: linear-gradient(90deg, #cbd5e1, #e2e8f0);
+}
+
+.post-stats-chart__row--rest .post-stats-chart__label {
+  color: #94a3b8;
+}
+
+.post-stats-chart__value {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.post-stats-chart__value strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.post-stats-chart__value em {
+  font-size: 11px;
+  font-style: normal;
+  color: #94a3b8;
+}
+
+.post-stats-chart__row--rest .post-stats-chart__value strong {
+  color: #64748b;
+  font-weight: 600;
+}

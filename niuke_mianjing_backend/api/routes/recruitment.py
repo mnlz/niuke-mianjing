@@ -1,25 +1,29 @@
-import io
 import re
 import time
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Header, Query, UploadFile
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from niuke_mianjing_backend.api.middleware.error_handler import BadRequestException
+from niuke_mianjing_backend.api.middleware.error_handler import BadRequestException, NotFoundException
+from niuke_mianjing_backend.api.routes.user_auth import optional_user_id, require_public_window, require_user_id
+from niuke_mianjing_backend.api.security import is_valid_admin_token
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.crawler.recruitment import create_adapter, list_adapters
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
+from niuke_mianjing_backend.repositories.ai_report_repo import AIReportRepository
 from niuke_mianjing_backend.repositories.recruitment_job_repo import RecruitmentJobRepository
 from niuke_mianjing_backend.schemas import ApiResponse
 from niuke_mianjing_backend.services.recruitment_ai import call_ai_report, interviews_brief, job_brief, jobs_brief
+from niuke_mianjing_backend.services.resume_parser import parse_resume_pdf as parse_resume_content
 
 
 router = APIRouter(prefix="/api/recruitment", tags=["公开招聘岗位"])
 recruitment_job_repo = RecruitmentJobRepository()
+ai_report_repo = AIReportRepository()
 niuke_repo = NiukeRepository()
 
 
@@ -30,7 +34,7 @@ class RecruitmentRefreshRequest(BaseModel):
 
 
 class RecruitmentAIReportRequest(BaseModel):
-    report_type: str = Field(..., description="job/company_compare/job_interviews/full")
+    report_type: str = Field(..., description="job/company_compare/job_interviews/resume_job/full/resume_match")
     source: str = "tencent"
     recruitment_type: str = "campus"
     source_job_id: Optional[str] = None
@@ -735,23 +739,19 @@ async def get_track_interviews(
 
 
 @router.post("/resume/parse", response_model=ApiResponse[dict])
-async def parse_resume_pdf(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(".pdf"):
+async def parse_resume_pdf(file: UploadFile = File(...), user_id: int = Depends(require_user_id)):
+    if not (file.filename or "").lower().endswith(".pdf"):
         raise BadRequestException("请上传 PDF 简历")
     content = await file.read()
     if len(content) > 8 * 1024 * 1024:
         raise BadRequestException("PDF 文件不能超过 8MB")
+    if not content.startswith(b"%PDF-"):
+        raise BadRequestException("请上传有效的 PDF 简历")
     try:
-        from pypdf import PdfReader
-
-        reader = PdfReader(io.BytesIO(content))
-        text = "\n".join((page.extract_text() or "").strip() for page in reader.pages[:12])
-    except Exception as exc:
-        raise BadRequestException(f"PDF 解析失败：{exc}") from exc
-    text = re.sub(r"\n{3,}", "\n\n", text).strip()
-    if not text:
-        raise BadRequestException("PDF 未解析出可用文本，请换成文本型 PDF")
-    return ApiResponse(message="解析成功", data={"text": text[:12000]})
+        parsed = await run_in_threadpool(parse_resume_content, content)
+    except ValueError as exc:
+        raise BadRequestException(str(exc)) from exc
+    return ApiResponse(message="解析成功", data=parsed)
 
 
 @router.get("/jobs", response_model=ApiResponse[dict])
@@ -762,7 +762,10 @@ async def get_recruitment_jobs(
     recruitment_type: str = Query("campus", max_length=20, description="招聘类型：campus/intern/social"),
     page: int = Query(1, ge=1, le=500),
     page_size: int = Query(12, ge=1, le=24),
+    user_id: Optional[int] = Depends(optional_user_id),
+    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
 ):
+    require_public_window((page - 1) * page_size, page_size, user_id, is_valid_admin_token(x_admin_token))
     source = source.strip().lower()
     if source not in list_adapters():
         raise BadRequestException(f"不支持的招聘来源：{source}")
@@ -830,33 +833,44 @@ async def refresh_recruitment_jobs(request: RecruitmentRefreshRequest):
 
 
 @router.post("/ai-report", response_model=ApiResponse[dict])
-async def generate_recruitment_ai_report(request: RecruitmentAIReportRequest):
+async def generate_recruitment_ai_report(
+    request: RecruitmentAIReportRequest,
+    user_id: int = Depends(require_user_id),
+):
     request.source = request.source.strip().lower()
     request.recruitment_type = request.recruitment_type.strip().lower() or "campus"
     request.track = request.track.strip().lower()
     job = None
     jobs: List[dict] = []
+    single_company_types = {"job", "job_interviews", "resume_job", "full"}
+    interview_types = {"job_interviews", "full"}
+    resume_types = {"resume_job", "full", "resume_match"}
+    if request.report_type in resume_types and not request.resume.strip():
+        raise BadRequestException("该报告类型需要提供简历内容")
+
     if request.source_job_id:
         job = await recruitment_job_repo.get_latest_job(request.source, request.recruitment_type, request.source_job_id)
         if job:
             jobs = [job]
-    elif request.report_type in {"job", "job_interviews", "full"}:
+    elif request.report_type in single_company_types:
         jobs = await _job_samples(request.source, request.recruitment_type, request.track, 8)
-    if request.report_type in {"job", "job_interviews", "full"} and not jobs:
+    if request.report_type in single_company_types and not jobs:
         raise BadRequestException("该公司/招聘类型/岗位方向暂无岗位数据")
 
-    if request.selected_interview_ids:
-        interviews = await niuke_repo.get_by_ids(request.selected_interview_ids, 8)
-    else:
-        interviews = await _related_interviews_for_jobs(jobs, 8)
-    if request.report_type in {"job_interviews", "full"} and not interviews:
+    interviews: List[dict] = []
+    if request.report_type in interview_types:
+        if request.selected_interview_ids:
+            interviews = await niuke_repo.get_by_ids(request.selected_interview_ids, 8)
+        else:
+            interviews = await _related_interviews_for_jobs(jobs, 8)
+    if request.report_type in interview_types and not interviews:
         raise BadRequestException("该公司/岗位方向暂无可用于分析的面经")
 
     job_context = job_brief(job) if job else jobs_brief(jobs)
     prompt = ""
     if request.report_type == "job":
         prompt = f"请基于以下岗位样本，输出结构化 Markdown 报告，包含：结论摘要、岗位画像、核心能力、优先准备项、项目建议、风险点。不要输出 HTML。\n{job_context}"
-    elif request.report_type == "company_compare":
+    elif request.report_type in {"company_compare", "resume_match"}:
         sources = request.compare_sources or list(SOURCE_META)
         chunks = []
         for source in sources[:8]:
@@ -871,9 +885,14 @@ async def generate_recruitment_ai_report(request: RecruitmentAIReportRequest):
                 chunks.append(f"## {SOURCE_META.get(source, {}).get('company', source)}\n" + "\n".join(job_brief(item) for item in filtered[:3]))
         if not chunks:
             raise BadRequestException("所选公司/招聘类型/岗位方向暂无可对比的岗位数据")
-        prompt = "请横向对比不同公司的招聘侧重点，输出结构化 Markdown，包含：结论摘要、共同要求、差异点、各公司偏好、候选人准备策略、风险提醒。不要输出 HTML。\n" + "\n\n".join(chunks)
+        if request.report_type == "company_compare":
+            prompt = "请横向对比不同公司的招聘侧重点，输出结构化 Markdown，包含：结论摘要、共同要求、差异点、各公司偏好、候选人准备策略、风险提醒。不要输出 HTML。\n" + "\n\n".join(chunks)
+        else:
+            prompt = "请根据候选人简历和以下不同公司的岗位样本，反向判断更匹配的公司与岗位方向。输出结构化 Markdown，包含：推荐排序、匹配依据、各公司机会与风险、简历共性修改建议、投递优先级。不要输出 HTML。\n" + "\n\n".join(chunks) + f"\n\n候选人简历：\n{request.resume[:8000]}"
     elif request.report_type == "job_interviews":
         prompt = f"请结合岗位要求和用户选定的最近相关面经，输出结构化 Markdown 报告，包含：结论摘要、岗位要求对应考点、高频问题、准备顺序、缺口风险。不要输出 HTML。\n{job_context}\n\n相关面经：\n{interviews_brief(interviews)}"
+    elif request.report_type == "resume_job":
+        prompt = f"请根据目标公司的岗位要求和候选人简历，输出结构化 Markdown 简历匹配报告，包含：结论摘要、匹配度、已有优势、能力缺口、逐项简历修改建议、投递风险。不要输出 HTML。\n{job_context}\n\n候选人简历：\n{request.resume[:8000]}"
     elif request.report_type == "full":
         prompt = f"请根据岗位要求、用户选定的最近相关面经和候选人简历，输出结构化 Markdown 完整求职分析报告，包含：结论摘要、匹配度、优势、短板、面试风险、补强计划、简历修改建议。不要输出 HTML。\n{job_context}\n\n相关面经：\n{interviews_brief(interviews)}\n\n候选人简历：\n{request.resume[:8000] or '未提供'}"
     else:
@@ -883,4 +902,39 @@ async def generate_recruitment_ai_report(request: RecruitmentAIReportRequest):
         report = await run_in_threadpool(call_ai_report, prompt)
     except ValueError as exc:
         raise BadRequestException(str(exc)) from exc
-    return ApiResponse(message="生成成功", data={"report": report, "model": settings.OPENAI_TEXT_MODEL})
+    if request.report_type in {"company_compare", "resume_match"}:
+        company = "、".join(SOURCE_META.get(item, {}).get("company", item) for item in request.compare_sources)
+    else:
+        company = SOURCE_META.get(request.source, {}).get("company", request.company or request.source)
+    track_name = (TRACKS.get(request.track) or {}).get("name", request.track)
+    saved = await ai_report_repo.save(user_id, {
+        "title": f"{company or '多公司'} · {track_name}",
+        "report_type": request.report_type,
+        "company": company,
+        "track": request.track,
+        "track_name": track_name,
+        "recruitment_type": request.recruitment_type,
+        "content": report,
+        "model": settings.OPENAI_TEXT_MODEL,
+    })
+    return ApiResponse(message="生成成功", data={**saved, "report": saved["content"]})
+
+
+@router.get("/ai-reports", response_model=ApiResponse[list])
+async def list_ai_reports(user_id: int = Depends(require_user_id)):
+    return ApiResponse(message="获取成功", data=await ai_report_repo.list_by_user(user_id))
+
+
+@router.get("/ai-reports/{report_code}", response_model=ApiResponse[dict])
+async def get_ai_report(report_code: str, user_id: int = Depends(require_user_id)):
+    report = await ai_report_repo.get_by_code(user_id, report_code)
+    if not report:
+        raise NotFoundException("报告不存在")
+    return ApiResponse(message="获取成功", data=report)
+
+
+@router.delete("/ai-reports/{report_code}", response_model=ApiResponse[dict])
+async def delete_ai_report(report_code: str, user_id: int = Depends(require_user_id)):
+    if not await ai_report_repo.delete_by_code(user_id, report_code):
+        raise NotFoundException("报告不存在")
+    return ApiResponse(message="删除成功", data={"report_code": report_code})

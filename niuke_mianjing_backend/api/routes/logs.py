@@ -1,9 +1,11 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 
 from niuke_mianjing_backend.api.deps import get_log_service
 from niuke_mianjing_backend.api.middleware.error_handler import NotFoundException
+from niuke_mianjing_backend.api.routes.user_auth import optional_user_id, require_public_window
+from niuke_mianjing_backend.api.security import is_valid_admin_token
 from niuke_mianjing_backend.schemas import (
     ApiResponse,
     CrawlLogItem,
@@ -72,8 +74,11 @@ async def get_niuke_data(
     company: Optional[str] = Query(None, description="公司名称"),
     limit: int = Query(20, description="每页条数", ge=1, le=100),
     offset: int = Query(0, description="偏移量", ge=0),
+    user_id: Optional[int] = Depends(optional_user_id),
+    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
     log_service: LogService = Depends(get_log_service),
 ):
+    require_public_window(offset, limit, user_id, is_valid_admin_token(x_admin_token))
     result = await log_service.get_niuke_data(post, company, limit, offset)
     return ApiResponse(message="获取成功", data=result)
 

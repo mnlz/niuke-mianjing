@@ -17,6 +17,7 @@ import {
 import { DownloadOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { logApi, quickCrawlApi } from '@/api'
 import type { ExportMdRequest, FilterOptions, JobTreeItem } from '@/api/types'
+import { useErrorMessage } from '@/hooks/useErrorMessage'
 import CrawlProgress from '@/components/CrawlProgress'
 import RealtimeEvents from '@/components/RealtimeEvents'
 import { useCrawlStore } from '@/store/crawlStore'
@@ -39,7 +40,8 @@ const QuickCrawl: React.FC = () => {
   const [exporting, setExporting] = useState(false)
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [exportForm] = Form.useForm()
-  const { progresses } = useCrawlStore()
+  const errMsg = useErrorMessage()
+  const progresses = useCrawlStore((s) => s.progresses)
   const isRunning = Object.values(progresses).some((p) => p.status === 'running')
 
   useEffect(() => {
@@ -78,7 +80,7 @@ const QuickCrawl: React.FC = () => {
       await quickCrawlApi.start({ posts: selectedPosts, max_pages: maxPages })
       message.success('快速爬取任务已启动')
     } catch (e: unknown) {
-      message.error((e as Error).message || '启动爬取失败')
+      errMsg(e, '启动爬取失败')
     } finally {
       setCrawling(false)
     }
@@ -97,7 +99,7 @@ const QuickCrawl: React.FC = () => {
       setExportModalOpen(false)
       exportForm.resetFields()
     } catch (e: unknown) {
-      if (e instanceof Error) message.error(e.message || '导出失败')
+      if (e instanceof Error) errMsg(e, '导出失败')
     } finally {
       setExporting(false)
     }

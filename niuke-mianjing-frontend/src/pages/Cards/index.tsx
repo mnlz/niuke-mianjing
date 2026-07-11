@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Card, Col, Input, InputNumber, message, Modal, Row, Select, Space, Switch, Tag, Typography } from 'antd'
 import {
   CopyOutlined,
@@ -10,7 +10,10 @@ import {
 import { toPng } from 'html-to-image'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { logApi, wechatApi } from '@/api'
-import type { CardTheme, FilterOptions, NiukeRecord } from '@/api/types'
+import type { CardTheme, NiukeRecord } from '@/api/types'
+import { useFilterOptions } from '@/hooks/useFilterOptions'
+import { useRecords } from '@/hooks/useRecords'
+import { useErrorMessage } from '@/hooks/useErrorMessage'
 import { buildRecordMarkdown, buildXhsDraft } from '@/utils/markdown'
 import CardPage from './CardPage'
 import {
@@ -32,17 +35,14 @@ const Cards: React.FC = () => {
   const navigate = useNavigate()
   const initialRecordId = (location.state as { recordId?: number } | null)?.recordId
   const cardRefs = useRef<Array<HTMLDivElement | null>>([])
-  const [records, setRecords] = useState<NiukeRecord[]>([])
   const [selectedId, setSelectedId] = useState<number | undefined>(initialRecordId)
   const [selectedRecord, setSelectedRecord] = useState<NiukeRecord | null>(null)
   const [markdown, setMarkdown] = useState(defaultMarkdown)
   const [theme, setTheme] = useState<CardTheme>('xiaohongshu')
   const [cardPresetKey, setCardPresetKey] = useState<CardSizePresetKey>('xhs_3_4')
   const [exporting, setExporting] = useState(false)
-  const [recordLoading, setRecordLoading] = useState(false)
   const [postFilter, setPostFilter] = useState('')
   const [companyFilter, setCompanyFilter] = useState('')
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ posts: [], companies: [] })
   const [newspicOpen, setNewspicOpen] = useState(false)
   const [newspicTitle, setNewspicTitle] = useState('')
   const [newspicContent, setNewspicContent] = useState('')
@@ -50,49 +50,16 @@ const Cards: React.FC = () => {
   const [newspicPublishing, setNewspicPublishing] = useState(false)
   const [newspicCommentEnabled, setNewspicCommentEnabled] = useState(true)
 
+  const errMsg = useErrorMessage()
+  const { postOptions, companyOptions } = useFilterOptions()
+  const { records, loading: recordLoading, reload: loadRecords } = useRecords(postFilter, companyFilter, { pageSize: 100 })
+
   const xhsDraft = useMemo(() => buildXhsDraft(selectedRecord, markdown), [selectedRecord, markdown])
   const currentTheme = themes[theme]
   const currentCardPreset = cardSizePresets[cardPresetKey]
   const exportPixelRatio = currentCardPreset.exportWidth / currentCardPreset.width
   const pages = useMemo(() => paginateMarkdown(markdown, currentCardPreset), [currentCardPreset, markdown])
   const newspicMaxImages = Math.min(20, pages.length)
-
-  const postOptions = useMemo(
-    () => [{ label: '全部方向', value: '' }, ...filterOptions.posts.map((post) => ({ label: post, value: post }))],
-    [filterOptions.posts],
-  )
-
-  const companyOptions = useMemo(
-    () => [
-      { label: '全部公司', value: '' },
-      ...filterOptions.companies.map((company) => ({ label: company, value: company })),
-    ],
-    [filterOptions.companies],
-  )
-
-  const loadRecords = useCallback(async () => {
-    try {
-      setRecordLoading(true)
-      const data = await logApi.records({
-        post: postFilter || undefined,
-        company: companyFilter || undefined,
-        limit: 100,
-        offset: 0,
-      })
-      setRecords(data?.data || [])
-    } catch {
-      message.warning('面经列表加载失败，可以手动粘贴 Markdown')
-    } finally {
-      setRecordLoading(false)
-    }
-  }, [companyFilter, postFilter])
-
-  useEffect(() => {
-    logApi
-      .filters()
-      .then((data) => setFilterOptions(data || { posts: [], companies: [] }))
-      .catch(() => message.warning('筛选项加载失败，可继续手动编辑 Markdown'))
-  }, [])
 
   useEffect(() => {
     loadRecords()
@@ -106,8 +73,8 @@ const Cards: React.FC = () => {
         setSelectedRecord(record)
         setMarkdown(buildRecordMarkdown(record))
       })
-      .catch((e: unknown) => message.error((e as Error).message || '加载面经详情失败'))
-  }, [selectedId])
+      .catch((e: unknown) => errMsg(e, '加载面经详情失败'))
+  }, [selectedId, errMsg])
 
   const handleExportPng = async () => {
     try {
@@ -129,7 +96,7 @@ const Cards: React.FC = () => {
       }
       message.success(`已导出 ${pages.length} 张卡片`)
     } catch (e: unknown) {
-      message.error((e as Error).message || '导出 PNG 失败')
+      errMsg(e, '导出 PNG 失败')
     } finally {
       setExporting(false)
     }
@@ -197,7 +164,7 @@ const Cards: React.FC = () => {
         content: `已上传 ${images.length} 张卡片图，草稿 media_id：${result.media_id}`,
       })
     } catch (e: unknown) {
-      message.error((e as Error).message || '创建公众号贴图草稿失败')
+      errMsg(e, '创建公众号贴图草稿失败')
     } finally {
       setNewspicPublishing(false)
     }
@@ -239,7 +206,7 @@ const Cards: React.FC = () => {
             showSearch
             optionFilterProp="label"
           />
-          <Button icon={<SearchOutlined />} onClick={loadRecords}>
+          <Button icon={<SearchOutlined />} onClick={() => loadRecords()}>
             刷新面经
           </Button>
           <Select

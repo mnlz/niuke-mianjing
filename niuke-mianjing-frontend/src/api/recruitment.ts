@@ -1,7 +1,9 @@
 import client from './client'
 import type {
   ApiResponse,
+  ParsedResume,
   RecruitmentAIReportResult,
+  RecruitmentAIReportRecord,
   RecruitmentInterview,
   RecruitmentJobPage,
   RecruitmentRefreshResult,
@@ -36,13 +38,22 @@ export const recruitmentApi = {
   trackInterviews: (params: { source: string; recruitment_type: RecruitmentType; track: string; limit?: number }) =>
     client.get<ApiResponse<RecruitmentInterview[]>>('/api/recruitment/track-interviews', { params }).then((r) => r.data.data),
 
-  aiReport: (data: { report_type: 'job' | 'company_compare' | 'job_interviews' | 'full'; source?: string; recruitment_type?: RecruitmentType; source_job_id?: string; track?: string; company?: string; resume?: string; compare_sources?: string[]; selected_interview_ids?: number[] }) =>
+  aiReport: (data: { report_type: 'job' | 'company_compare' | 'job_interviews' | 'resume_job' | 'full' | 'resume_match'; source?: string; recruitment_type?: RecruitmentType; source_job_id?: string; track?: string; company?: string; resume?: string; compare_sources?: string[]; selected_interview_ids?: number[] }) =>
     client.post<ApiResponse<RecruitmentAIReportResult>>('/api/recruitment/ai-report', data, { timeout: 120000 }).then((r) => r.data.data),
+
+  aiReports: () =>
+    client.get<ApiResponse<RecruitmentAIReportRecord[]>>('/api/recruitment/ai-reports').then((r) => r.data.data),
+
+  aiReportDetail: (reportCode: string) =>
+    client.get<ApiResponse<RecruitmentAIReportRecord>>(`/api/recruitment/ai-reports/${encodeURIComponent(reportCode)}`).then((r) => r.data.data),
+
+  deleteAIReport: (reportCode: string) =>
+    client.delete<ApiResponse<{ report_code: string }>>(`/api/recruitment/ai-reports/${encodeURIComponent(reportCode)}`).then((r) => r.data.data),
 
   parseResume: (file: File) => {
     const form = new FormData()
     form.append('file', file)
-    return client.post<ApiResponse<{ text: string }>>('/api/recruitment/resume/parse', form, {
+    return client.post<ApiResponse<ParsedResume>>('/api/recruitment/resume/parse', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 60000,
     }).then((r) => r.data.data)

@@ -18,14 +18,13 @@ class ReviewService:
     async def init_tables(self):
         await self.review_repo.init_tables()
 
-    async def get_progress(self, visitor_key: str, record_ids: List[int]) -> List[Dict[str, Any]]:
-        user_id = await self.review_repo.get_or_create_user(visitor_key)
+    async def get_progress(self, user_id: int, record_ids: List[int]) -> List[Dict[str, Any]]:
         progress_map = await self.review_repo.get_progress_map(user_id, record_ids)
         return [progress_map.get(record_id, ReviewRepository.default_progress(record_id)) for record_id in record_ids]
 
     async def update_progress(
         self,
-        visitor_key: str,
+        user_id: int,
         record_id: int,
         favorite: Optional[bool] = None,
         mastery: Optional[str] = None,
@@ -33,7 +32,6 @@ class ReviewService:
     ) -> Dict[str, Any]:
         if mastery and mastery not in {"new", "learning", "fuzzy", "mastered"}:
             raise ValueError("掌握状态不合法")
-        user_id = await self.review_repo.get_or_create_user(visitor_key)
         return await self.review_repo.upsert_progress(user_id, record_id, favorite, mastery, note)
 
     async def build_overview(

@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button, Card, DatePicker, InputNumber, message, Select, Space, Table, Typography } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { logApi } from '@/api'
-import type { CrawlLog, FilterOptions } from '@/api/types'
+import type { CrawlLog } from '@/api/types'
+import { useFilterOptions } from '@/hooks/useFilterOptions'
+import { useErrorMessage } from '@/hooks/useErrorMessage'
 import StatusTag from '@/components/StatusTag'
 
 const { Text } = Typography
@@ -18,16 +20,13 @@ const STATUS_OPTIONS = [
 const Logs: React.FC = () => {
   const [logs, setLogs] = useState<CrawlLog[]>([])
   const [loading, setLoading] = useState(false)
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ posts: [], companies: [] })
   const [postFilter, setPostFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [limit, setLimit] = useState(20)
 
-  const postOptions = useMemo(
-    () => [{ label: '全部方向', value: '' }, ...filterOptions.posts.map((post) => ({ label: post, value: post }))],
-    [filterOptions.posts],
-  )
+  const errMsg = useErrorMessage()
+  const { postOptions } = useFilterOptions()
 
   const fetchLogs = async () => {
     try {
@@ -42,18 +41,11 @@ const Logs: React.FC = () => {
       const data = await logApi.logs(params)
       setLogs(Array.isArray(data) ? data : [])
     } catch (e: unknown) {
-      message.error((e as Error).message || '获取日志失败')
+      errMsg(e, '获取日志失败')
     } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    logApi
-      .filters()
-      .then((data) => setFilterOptions(data || { posts: [], companies: [] }))
-      .catch(() => message.warning('方向筛选项加载失败'))
-  }, [])
 
   useEffect(() => {
     fetchLogs()

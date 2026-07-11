@@ -38,7 +38,8 @@ const describeMessage = (msg: { type: WSMessageType; data?: unknown; message?: s
 }
 
 const RealtimeEvents: React.FC = () => {
-  const { connected, lastMessages } = useCrawlStore()
+  const connected = useCrawlStore((s) => s.connected)
+  const lastMessages = useCrawlStore((s) => s.lastMessages)
   const items = useMemo(() => lastMessages.slice(-5).reverse(), [lastMessages])
 
   return (

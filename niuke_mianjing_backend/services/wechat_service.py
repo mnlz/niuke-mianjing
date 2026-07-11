@@ -1,19 +1,14 @@
-import base64
 import json
-import random
 import re
 import tempfile
 from collections import Counter
 from datetime import datetime, timedelta
-from html import escape
-from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import markdown
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image, ImageDraw
 
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
@@ -41,14 +36,19 @@ from niuke_mianjing_backend.services.wechat_prompts import (
     _build_stream_html_prompt,
     _build_stream_markdown_prompt,
 )
+from niuke_mianjing_backend.services.wechat_media import (
+    cover_suffix,
+    generate_cover,
+    image_url_to_base64,
+    normalize_base64_image,
+    resize_cover_base64,
+    write_base64_image,
+)
 from niuke_mianjing_backend.services.wechat_formatter import (
     get_raphael_theme_groups,
     render_markdown_as_raphael_html,
     render_raphael_wechat_html,
 )
-
-
-TARGET_COVER_SIZE = (900, 500)
 
 
 class WeChatService:
@@ -153,7 +153,7 @@ class WeChatService:
         self._ensure_openai_configured()
         final_html = self._ensure_wechat_html(title, html, style, wechat_theme)
         prompt = cover_prompt or _build_cover_prompt(title, markdown_content, style)
-        final_cover_base64 = self._normalize_base64_image(cover_base64) if cover_base64 else None
+        final_cover_base64 = normalize_base64_image(cover_base64) if cover_base64 else None
         final_cover_mime = cover_mime or "image/png"
         model_info = {
             "text_model": settings.OPENAI_TEXT_MODEL,
@@ -419,8 +419,8 @@ class WeChatService:
         try:
             token = get_token()
             with tempfile.TemporaryDirectory() as temp_dir:
-                cover_path = str(Path(temp_dir) / f"wechat_cover{self._cover_suffix(article.get('cover_mime'))}")
-                self._write_base64_image(article["cover_base64"], cover_path)
+                cover_path = str(Path(temp_dir) / f"wechat_cover{cover_suffix(article.get('cover_mime'))}")
+                write_base64_image(article["cover_base64"], cover_path)
                 cover_media_id = upload_cover(token, cover_path)
 
             draft = push_draft(
@@ -449,41 +449,6 @@ class WeChatService:
             await self.article_repo.update_publish_result(article_id, status="failed", error_message=str(exc))
             raise
 
-    def generate_cover(self, output_path: str, theme: str = "auto", markdown_content: str = "") -> str:
-        palette = self._pick_palette(theme, markdown_content)
-        img = Image.new("RGB", TARGET_COVER_SIZE, palette["background"])
-        draw = ImageDraw.Draw(img)
-
-        for _ in range(140):
-            x, y = random.randint(0, TARGET_COVER_SIZE[0]), random.randint(0, TARGET_COVER_SIZE[1])
-            b = random.randint(120, 255)
-            draw.point((x, y), fill=(max(0, b - 60), max(0, b - 30), b))
-
-        overlay = Image.new("RGBA", TARGET_COVER_SIZE, (0, 0, 0, 0))
-        od = ImageDraw.Draw(overlay)
-        od.ellipse([120, 80, 580, 420], fill=palette["glow_primary"])
-        od.ellipse([430, 20, 820, 360], fill=palette["glow_secondary"])
-
-        if palette["kind"] == "programming":
-            for x in range(40, TARGET_COVER_SIZE[0], 42):
-                for y in range(-20, TARGET_COVER_SIZE[1] + 20, 38):
-                    if random.random() > 0.55:
-                        od.text((x, y), random.choice(["0", "1", "{ }", "</>"]), fill=(52, 211, 153, 55))
-        else:
-            nodes = [(random.randint(140, 760), random.randint(90, 410)) for _ in range(18)]
-            for idx, (x, y) in enumerate(nodes):
-                for nx, ny in nodes[idx + 1 : idx + 4]:
-                    od.line((x, y, nx, ny), fill=palette["line"])
-                od.ellipse([x - 4, y - 4, x + 4, y + 4], fill=palette["node"])
-
-        final_img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
-        final_img.save(output_path, "PNG")
-        return output_path
-
-
-
-
-
     def create_newspic_draft(
         self,
         title: str,
@@ -506,10 +471,10 @@ class WeChatService:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             for index, image_base64 in enumerate(images):
-                normalized = self._normalize_base64_image(image_base64)
+                normalized = normalize_base64_image(image_base64)
                 mime = image_mimes[index] if image_mimes and index < len(image_mimes) else "image/png"
-                image_path = str(Path(temp_dir) / f"newspic_card_{index + 1}{self._cover_suffix(mime)}")
-                self._write_base64_image(normalized, image_path)
+                image_path = str(Path(temp_dir) / f"newspic_card_{index + 1}{cover_suffix(mime)}")
+                write_base64_image(normalized, image_path)
                 image_media_ids.append(upload_cover(token, image_path))
 
         draft = push_newspic_draft(
@@ -543,7 +508,7 @@ class WeChatService:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             cover_path = str(Path(temp_dir) / "wechat_cover.png")
-            self.generate_cover(cover_path, cover_theme, markdown_content)
+            generate_cover(cover_path, cover_theme, markdown_content)
             cover_media_id = upload_cover(token, cover_path)
 
         draft = push_draft(
@@ -617,10 +582,10 @@ class WeChatService:
         image_base64 = image_item.get("b64_json")
         image_url = image_item.get("url")
         if not image_base64 and image_url:
-            image_base64 = self._image_url_to_base64(image_url)
+            image_base64 = image_url_to_base64(image_url)
         if not image_base64:
             raise ValueError(f"OpenAI 封面响应缺少 b64_json：{data}")
-        return self._resize_cover_base64(image_base64)
+        return resize_cover_base64(image_base64)
 
     @staticmethod
     def _chat_completions_url() -> str:
@@ -706,61 +671,6 @@ class WeChatService:
             raise ValueError("OpenAI 返回不是合法 JSON")
 
     @staticmethod
-    def _resize_cover_base64(image_base64: str) -> str:
-        raw = base64.b64decode(image_base64)
-        img = Image.open(BytesIO(raw)).convert("RGB")
-        src_w, src_h = img.size
-        target_ratio = TARGET_COVER_SIZE[0] / TARGET_COVER_SIZE[1]
-        src_ratio = src_w / src_h
-
-        if src_ratio > target_ratio:
-            new_w = int(src_h * target_ratio)
-            left = (src_w - new_w) // 2
-            img = img.crop((left, 0, left + new_w, src_h))
-        else:
-            new_h = int(src_w / target_ratio)
-            top = (src_h - new_h) // 2
-            img = img.crop((0, top, src_w, top + new_h))
-
-        img = img.resize(TARGET_COVER_SIZE, Image.Resampling.LANCZOS)
-        output = BytesIO()
-        img.save(output, "PNG")
-        return base64.b64encode(output.getvalue()).decode("utf-8")
-
-    @staticmethod
-    def _image_url_to_base64(image_url: str) -> str:
-        if image_url.startswith("data:image"):
-            _, encoded = image_url.split(",", 1)
-            return encoded
-
-        response = requests.get(image_url, timeout=60)
-        if response.status_code >= 400:
-            raise ValueError(f"下载封面图失败：HTTP {response.status_code}")
-        return base64.b64encode(response.content).decode("utf-8")
-
-    @staticmethod
-    def _write_base64_image(image_base64: str, output_path: str):
-        Path(output_path).write_bytes(base64.b64decode(image_base64))
-
-    @staticmethod
-    def _normalize_base64_image(image_base64: str) -> str:
-        value = image_base64.strip()
-        if value.startswith("data:"):
-            _, _, value = value.partition(",")
-        base64.b64decode(value, validate=True)
-        return value
-
-    @staticmethod
-    def _cover_suffix(mime: Optional[str]) -> str:
-        suffixes = {
-            "image/jpeg": ".jpg",
-            "image/jpg": ".jpg",
-            "image/png": ".png",
-            "image/webp": ".webp",
-        }
-        return suffixes.get((mime or "").lower(), ".png")
-
-    @staticmethod
     def _parse_frontmatter(raw_meta: str) -> Dict:
         metadata: Dict[str, object] = {}
         for line in raw_meta.splitlines():
@@ -781,118 +691,6 @@ class WeChatService:
             if match:
                 return match.group(1).strip()
         return None
-
-    @staticmethod
-    def _inline_wechat_styles(title: str, body_html: str) -> str:
-        soup = BeautifulSoup(body_html, "html.parser")
-        styles = {
-            "h1": "font-size:22px;line-height:1.4;font-weight:bold;color:#1a1a1a;margin:0 0 24px 0;border-bottom:2px solid #1677ff;padding-bottom:14px;",
-            "h2": "font-size:18px;line-height:1.5;font-weight:bold;color:#1a1a1a;margin:30px 0 16px;border-left:4px solid #1677ff;padding-left:10px;",
-            "h3": "font-size:16px;line-height:1.5;font-weight:bold;color:#1677ff;margin:22px 0 10px;",
-            "p": "font-size:16px;line-height:1.78;color:#333333;margin:0 0 16px;text-align:justify;",
-            "ul": "font-size:16px;line-height:1.75;color:#333333;margin:14px 0 16px;padding-left:22px;",
-            "ol": "font-size:16px;line-height:1.75;color:#333333;margin:14px 0 16px;padding-left:22px;",
-            "li": "font-size:16px;line-height:1.75;color:#333333;margin:0 0 8px;",
-            "blockquote": "margin:18px 0;padding:14px 16px;border-left:4px solid #1677ff;background-color:#f0f7ff;color:#555555;",
-            "pre": "font-size:13px;line-height:1.65;color:#cdd6f4;background-color:#1e1e2e;border-radius:6px;padding:14px;overflow:auto;",
-            "code": "font-family:Consolas,Menlo,monospace;background-color:#f0f0f0;color:#d32f2f;border-radius:3px;padding:2px 5px;",
-            "a": "color:#1677ff;text-decoration:none;",
-            "table": "width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;",
-            "th": "border:1px solid #dddddd;background-color:#1677ff;color:#ffffff;padding:9px 10px;text-align:left;font-weight:bold;",
-            "td": "border:1px solid #dddddd;color:#333333;padding:8px 10px;text-align:left;",
-            "img": "max-width:100%;height:auto;border-radius:4px;margin:14px auto;display:block;",
-            "hr": "border:0;border-top:1px solid #e5e7eb;margin:24px 0;",
-            "strong": "font-weight:bold;color:#1a1a1a;",
-            "em": "font-style:italic;color:#666666;",
-        }
-        for tag_name, style in styles.items():
-            for tag in soup.find_all(tag_name):
-                tag["style"] = f"{tag.get('style', '')}{style}"
-
-        content = str(soup)
-        escaped_title = escape(title)
-        return f"""
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',Arial,sans-serif;color:#333333;">
-  <tr>
-    <td style="padding:0;">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:677px;margin:0 auto;background-color:#ffffff;">
-        <tr>
-          <td style="padding:18px 16px 24px;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:22px;">
-              <tr>
-                <td style="border-bottom:2px solid #1677ff;padding-bottom:14px;">
-                  <p style="font-size:13px;line-height:1.6;color:#1677ff;margin:0 0 8px;">牛客面经助手 · 技术复盘</p>
-                  <h1 style="font-size:22px;line-height:1.4;color:#1a1a1a;font-weight:bold;margin:0;">{escaped_title}</h1>
-                </td>
-              </tr>
-            </table>
-            {content}
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-""".strip()
-
-    @staticmethod
-    def _inline_report_styles(title: str, body_html: str) -> str:
-        soup = BeautifulSoup(body_html, "html.parser")
-        for tag in soup.find_all(["p", "li"]):
-            tag["style"] = (
-                "box-sizing:border-box;margin:1.3em 8px;text-align:justify;"
-                "line-height:1.75;font-size:14px;letter-spacing:0.08em;color:rgb(63,63,63);"
-            )
-        for tag in soup.find_all("strong"):
-            tag["style"] = "font-weight:bold;color:rgb(15,76,129);"
-        for tag in soup.find_all("h1"):
-            tag["style"] = (
-                "box-sizing:border-box;border-width:0 0 2px;border-style:solid;"
-                "border-color:rgb(15,76,129);font-size:16.8px;font-weight:bold;"
-                "margin:2em auto 1em;text-align:center;line-height:1.75;display:table;"
-                "padding:0 1em;color:rgb(63,63,63);"
-            )
-        for tag in soup.find_all("h2"):
-            tag["style"] = (
-                "box-sizing:border-box;font-size:16.8px;font-weight:bold;margin:4em auto 2em;"
-                "text-align:center;line-height:1.75;display:table;padding:0 0.4em;"
-                "color:#fff;background:rgb(15,76,129);"
-            )
-        for tag in soup.find_all("h3"):
-            tag["style"] = (
-                "box-sizing:border-box;font-size:15.5px;font-weight:bold;margin:2.2em 8px 1em;"
-                "line-height:1.75;color:rgb(15,76,129);"
-            )
-        for tag in soup.find_all("hr"):
-            tag["style"] = (
-                "box-sizing:border-box;border:0;border-top:2px solid #e5e7eb;"
-                "height:0;margin:1.5em 0;"
-            )
-        for table in soup.find_all("table"):
-            table["style"] = "box-sizing:border-box;border-collapse:collapse;border-spacing:0;width:100%;margin:1em 0;"
-        for cell in soup.find_all(["td", "th"]):
-            cell["style"] = (
-                "box-sizing:border-box;border:1px solid rgb(223,223,223);text-align:left;"
-                "line-height:1.75;font-size:14px;padding:0.25em 0.5em;color:rgb(63,63,63);"
-            )
-        content = str(soup)
-        escaped_title = escape(title)
-        return f"""
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;font-family:-apple-system-font,BlinkMacSystemFont,'Helvetica Neue','PingFang SC','Hiragino Sans GB','Microsoft YaHei UI','Microsoft YaHei',Arial,sans-serif;color:rgb(63,63,63);">
-  <tr>
-    <td style="padding:0;">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:677px;margin:0 auto;background-color:#ffffff;">
-        <tr>
-          <td style="padding:0 8px 24px;text-align:left;line-height:1.75;font-size:14px;">
-            <h1 style="box-sizing:border-box;border-width:0 0 2px;border-style:solid;border-color:rgb(15,76,129);font-size:16.8px;font-weight:bold;margin:2em auto 1em;text-align:center;line-height:1.75;display:table;padding:0 1em;color:rgb(63,63,63);">{escaped_title}</h1>
-            {content}
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-""".strip()
 
     def _ensure_wechat_html(
         self,
@@ -1006,35 +804,3 @@ class WeChatService:
             if any(keyword in text for keyword in keywords):
                 return name
         return "业务与开放问题"
-
-
-
-    @staticmethod
-    def _pick_palette(theme: str, markdown_content: str) -> Dict:
-        text = f"{theme} {markdown_content}".lower()
-        if any(keyword in text for keyword in ["code", "java", "python", "前端", "后端", "编程", "程序"]):
-            return {
-                "kind": "programming",
-                "background": "#071512",
-                "glow_primary": (34, 197, 94, 42),
-                "glow_secondary": (20, 184, 166, 34),
-                "line": (74, 222, 128, 70),
-                "node": (134, 239, 172, 150),
-            }
-        if any(keyword in text for keyword in ["ai", "大模型", "算法", "机器学习"]):
-            return {
-                "kind": "ai",
-                "background": "#160f08",
-                "glow_primary": (249, 115, 22, 46),
-                "glow_secondary": (251, 191, 36, 34),
-                "line": (251, 146, 60, 75),
-                "node": (253, 186, 116, 160),
-            }
-        return {
-            "kind": "tech",
-            "background": "#0a0a1a",
-            "glow_primary": (100, 140, 255, 42),
-            "glow_secondary": (34, 211, 238, 28),
-            "line": (125, 211, 252, 70),
-            "node": (191, 219, 254, 150),
-        }

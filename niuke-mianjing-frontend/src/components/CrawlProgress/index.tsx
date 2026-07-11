@@ -1,11 +1,10 @@
 import React from 'react'
 import { Card, Empty, Progress, Space, Typography } from 'antd'
 import { useCrawlStore } from '@/store/crawlStore'
-
 const { Text } = Typography
 
 const CrawlProgress: React.FC = () => {
-  const { progresses } = useCrawlStore()
+  const progresses = useCrawlStore((s) => s.progresses)
   const entries = Object.values(progresses)
 
   return (

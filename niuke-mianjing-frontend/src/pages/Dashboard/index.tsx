@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { BarChartOutlined, CheckCircleOutlined, ClockCircleOutlined, DatabaseOutlined } from '@ant-design/icons'
-import { Card, Col, Empty, List, Progress, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
+import { Card, Col, Empty, List, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
+import { Pie } from '@ant-design/charts'
 import { logApi, scheduleApi } from '@/api'
 import type { CrawlLog, ScheduleJob, StatsData } from '@/api/types'
 import CrawlProgress from '@/components/CrawlProgress'
+import PostStatsChart from '@/components/PostStatsChart'
 import RealtimeEvents from '@/components/RealtimeEvents'
 
 const { Text } = Typography
@@ -42,11 +44,6 @@ const Dashboard: React.FC = () => {
     return () => window.clearInterval(timer)
   }, [])
 
-  const maxPostCount = useMemo(
-    () => Math.max(...(stats?.post_stats?.map((item) => item.count) || [1])),
-    [stats],
-  )
-
   const nextJobs = useMemo(
     () =>
       [...jobs]
@@ -55,6 +52,13 @@ const Dashboard: React.FC = () => {
         .slice(0, 4),
     [jobs],
   )
+
+  const activeRate = useMemo(() => {
+    const total = stats?.total_records ?? 0
+    const active = stats?.active_records ?? 0
+    if (total === 0) return 0
+    return Math.round((active / total) * 100)
+  }, [stats])
 
   if (loading) {
     return (
@@ -117,27 +121,44 @@ const Dashboard: React.FC = () => {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={14}>
           <Card title="各方向面经数量" className="surface-card">
-            {stats?.post_stats?.length ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {stats.post_stats.map((item) => {
-                  const percent = Math.round((item.count / maxPostCount) * 100)
-                  return (
-                    <div key={item.post}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <Text strong>{item.post}</Text>
-                        <Text type="secondary">{item.count.toLocaleString()} 条</Text>
-                      </div>
-                      <Progress percent={percent} showInfo={false} strokeColor="#1677ff" />
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <Empty description="暂无方向统计" />
-            )}
+            <PostStatsChart data={stats?.post_stats} loading={false} />
           </Card>
         </Col>
         <Col xs={24} lg={10}>
+          <Card title="面经有效率" className="surface-card">
+            {stats ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minHeight: 320 }}>
+                <Pie
+                  data={[
+                    { type: '有效', value: stats.active_records ?? 0 },
+                    { type: '待清理', value: Math.max(0, (stats.total_records ?? 0) - (stats.active_records ?? 0)) },
+                  ]}
+                  angleField="value"
+                  colorField="type"
+                  color={['#1d1d1f', '#f2f2f7']}
+                  innerRadius={0.78}
+                  label={false}
+                  legend={false}
+                  tooltip={{
+                    title: (d: { type: string }) => d.type,
+                    items: [{ field: 'value', name: '数量' }],
+                  }}
+                  style={{ height: 220 }}
+                />
+                <Text style={{ fontSize: 28, fontWeight: 600, color: '#1d1d1f', marginTop: -16 }}>
+                  {activeRate}%
+                </Text>
+                <Text style={{ fontSize: 13, color: '#86868b' }}>有效面经占总数的比例</Text>
+              </div>
+            ) : (
+              <Empty description="暂无统计数据" />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={12}>
           <Card title="定时任务执行情况" className="surface-card">
             {nextJobs.length ? (
               <List
@@ -165,6 +186,29 @@ const Dashboard: React.FC = () => {
             )}
           </Card>
         </Col>
+        <Col xs={24} lg={12}>
+          <Card title="最近爬取日志" className="surface-card">
+            {logs.length ? (
+              <List
+                size="small"
+                dataSource={logs}
+                renderItem={(item) => (
+                  <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
+                    <Space wrap>
+                      <Tag color={statusColor(item.status)}>{item.status}</Tag>
+                      <Text strong>{item.post}</Text>
+                      <Text type="secondary">
+                        新增 {item.new_records} · 更新 {item.updated_records} · {item.end_time || item.start_time || '-'}
+                      </Text>
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无爬取日志" />
+            )}
+          </Card>
+        </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
@@ -175,28 +219,6 @@ const Dashboard: React.FC = () => {
           <RealtimeEvents />
         </Col>
       </Row>
-
-      <Card title="最近爬取日志" className="surface-card" style={{ marginTop: 16 }}>
-        {logs.length ? (
-          <List
-            size="small"
-            dataSource={logs}
-            renderItem={(item) => (
-              <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
-                <Space wrap>
-                  <Tag color={statusColor(item.status)}>{item.status}</Tag>
-                  <Text strong>{item.post}</Text>
-                  <Text type="secondary">
-                    新增 {item.new_records} · 更新 {item.updated_records} · {item.end_time || item.start_time || '-'}
-                  </Text>
-                </Space>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无爬取日志" />
-        )}
-      </Card>
     </div>
   )
 }

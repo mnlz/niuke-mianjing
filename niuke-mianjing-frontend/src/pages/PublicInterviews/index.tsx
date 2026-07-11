@@ -1,25 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Card, Col, Drawer, Empty, Input, message, Pagination, Row, Select, Space, Tabs, Tag, Typography } from 'antd'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Card, Col, Empty, Input, message, Pagination, Row, Select, Space, Tag, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
-  BarChartOutlined,
-  CopyOutlined,
-  FireOutlined,
   HomeOutlined,
-  RobotOutlined,
   SearchOutlined,
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { logApi, reviewApi } from '@/api'
-import type { FilterOptions, NiukeRecord, ReviewAIResult, ReviewMastery, ReviewOverview, ReviewProgress } from '@/api/types'
+import type { NiukeRecord, ReviewMastery, ReviewProgress } from '@/api/types'
+import { useFilterOptions } from '@/hooks/useFilterOptions'
+import { useRecords } from '@/hooks/useRecords'
+import { useErrorMessage } from '@/hooks/useErrorMessage'
 import { hotInterviewCompanies } from '@/constants/companies'
 import { formatDisplayTime } from '@/utils/datetime'
-import { buildRecordMarkdown, getNowcoderUrl } from '@/utils/markdown'
-import { getAdminToken } from '@/utils/auth'
+import { buildRecordMarkdown } from '@/utils/markdown'
+import { extractReviewCards, filterRecordsByKeyword } from './interviewUtils'
+import ReviewOverviewCard from './ReviewOverviewCard'
+import InterviewDetailDrawer from './InterviewDetailDrawer'
+import UserSessionButton from '@/components/UserSessionButton'
+import { getUserToken, isAnonymousPageAllowed, userLoginPath } from '@/utils/auth'
 
 const { Paragraph, Text, Title } = Typography
 
@@ -36,52 +37,30 @@ const masteryOptions: Array<{ label: string; value: ReviewMastery; color: string
 
 const masteryMeta = (value?: ReviewMastery) => masteryOptions.find((item) => item.value === value) || masteryOptions[0]
 
-const normalizeInterviewText = (content: string) =>
-  content
-    .replace(/\r/g, '\n')
-    .replace(/([。！？?])\s*(\d{1,2}[.、])/g, '$1\n$2')
-    .replace(/([^\n])\s+(\d{1,2}[.、]\s*[^\d\s])/g, '$1\n$2')
-
-const extractReviewCards = (record: NiukeRecord | null) => {
-  if (!record?.content) return []
-  const lines = normalizeInterviewText(record.content)
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-  const questionLike = lines.filter((line) =>
-    /(\?|？|什么|如何|怎么|区别|原理|介绍|讲讲|说说|实现|场景|为什么)/.test(line),
-  )
-
-  const source = questionLike.length > 0 ? questionLike : lines
-  return source.slice(0, 8).map((line, index) => ({
-    title: line.replace(/^\d{1,2}[.、]\s*/, '').slice(0, 72),
-    tag: index < 3 ? '高优先级' : index < 6 ? '重点回看' : '补充',
-  }))
-}
-
 const PublicInterviews: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const initialPost = searchParams.get('post') || ''
   const initialCompany = searchParams.get('company') || defaultCompany
-  const [records, setRecords] = useState<NiukeRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<NiukeRecord | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [detailTab, setDetailTab] = useState('raw')
-  const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [postFilter, setPostFilter] = useState(initialPost)
   const [companyFilter, setCompanyFilter] = useState(initialCompany)
   const [keyword, setKeyword] = useState('')
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ posts: [], companies: [] })
-  const [pagination, setPagination] = useState({ current: 1, pageSize: PAGE_SIZE, total: 0 })
   const [progressMap, setProgressMap] = useState<Record<number, ReviewProgress>>({})
-  const [overview, setOverview] = useState<ReviewOverview | null>(null)
-  const [overviewLoading, setOverviewLoading] = useState(false)
-  const [overviewDays, setOverviewDays] = useState(30)
-  const [aiReview, setAiReview] = useState<ReviewAIResult | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
+  const [analysisIds, setAnalysisIds] = useState<number[]>([])
+  const openedRecordIdRef = useRef<number | null>(null)
+
+  const errMsg = useErrorMessage()
+  const { postOptions, companyOptions } = useFilterOptions()
+  const { records, loading, pagination, reload: fetchRecords } = useRecords(postFilter, companyFilter, {
+    paged: true,
+    pageSize: PAGE_SIZE,
+    errorMessage: '获取面经失败',
+  })
 
   const selectedMarkdown = useMemo(
     () => (selectedRecord ? buildRecordMarkdown(selectedRecord) : ''),
@@ -92,76 +71,65 @@ const PublicInterviews: React.FC = () => {
 
   const selectedProgress = selectedRecord ? progressMap[selectedRecord.id] : null
 
-  const postOptions = useMemo(
-    () => [{ label: '全部方向', value: '' }, ...filterOptions.posts.map((post) => ({ label: post, value: post }))],
-    [filterOptions.posts],
-  )
-
-  const companyOptions = useMemo(
-    () => [
-      { label: '全部公司', value: '' },
-      ...filterOptions.companies.map((company) => ({ label: company, value: company })),
-    ],
-    [filterOptions.companies],
-  )
-
   const visibleRecords = useMemo(() => {
-    const value = keyword.trim().toLowerCase()
-    if (!value) return records
-    return records.filter((record) =>
-      `${record.title} ${record.company} ${record.post} ${record.content}`.toLowerCase().includes(value),
-    )
+    return filterRecordsByKeyword(records, keyword)
   }, [keyword, records])
 
-  const fetchRecords = async (page = 1, pageSize = pagination.pageSize) => {
-    try {
-      setLoading(true)
-      const offset = (page - 1) * pageSize
-      const data = await logApi.records({
-        post: postFilter || undefined,
-        company: companyFilter || undefined,
-        limit: pageSize,
-        offset,
+  useEffect(() => {
+    fetchRecords(1)
+  }, [fetchRecords])
+
+  useEffect(() => {
+    if (records.length === 0 || !getUserToken()) return
+    const ids = records.map((record) => record.id)
+    reviewApi
+      .progress(ids)
+      .then((progressRows) => {
+        setProgressMap((prev) => ({
+          ...prev,
+          ...Object.fromEntries((progressRows || []).map((item) => [item.record_id, item])),
+        }))
       })
-      setRecords(data?.data || [])
-      const ids = (data?.data || []).map((record) => record.id)
-      if (ids.length) {
-        reviewApi
-          .progress(ids)
-          .then((progressRows) => {
-            setProgressMap((prev) => ({
-              ...prev,
-              ...Object.fromEntries((progressRows || []).map((item) => [item.record_id, item])),
-            }))
-          })
-          .catch(() => undefined)
-      }
-      setPagination((prev) => ({
-        ...prev,
-        current: page,
-        pageSize,
-        total: data?.total || 0,
-      }))
-    } catch (e: unknown) {
-      message.error((e as Error).message || '获取面经失败')
-    } finally {
-      setLoading(false)
-    }
-  }
+      .catch(() => undefined)
+  }, [records])
 
   const openDetail = async (record: NiukeRecord) => {
     setDrawerOpen(true)
     setDetailTab('raw')
     setSelectedRecord(record)
-    setAiReview(null)
     try {
       setDetailLoading(true)
       const detail = await logApi.record(record.id)
       setSelectedRecord(detail)
     } catch (e: unknown) {
-      message.error((e as Error).message || '获取详情失败')
+      errMsg(e, '获取详情失败')
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  const openRecordById = async (recordId: number) => {
+    setDrawerOpen(true)
+    setDetailTab('raw')
+    try {
+      setDetailLoading(true)
+      const detail = await logApi.record(recordId)
+      setSelectedRecord(detail)
+    } catch (e: unknown) {
+      openedRecordIdRef.current = null
+      errMsg(e, '获取详情失败')
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const closeDetail = () => {
+    setDrawerOpen(false)
+    const next = new URLSearchParams(searchParams)
+    if (next.has('record')) {
+      next.delete('record')
+      setSearchParams(next, { replace: true })
+      openedRecordIdRef.current = null
     }
   }
 
@@ -175,6 +143,11 @@ const PublicInterviews: React.FC = () => {
     recordId: number,
     patch: { favorite?: boolean; mastery?: ReviewMastery; note?: string | null },
   ) => {
+    if (!getUserToken()) {
+      message.info('登录后可以收藏和保存复习进度')
+      navigate(userLoginPath(`${location.pathname}${location.search}`))
+      return
+    }
     const current = progressMap[recordId]
     const optimistic = {
       record_id: recordId,
@@ -191,52 +164,9 @@ const PublicInterviews: React.FC = () => {
       message.success('复习状态已保存')
     } catch (e: unknown) {
       if (current) setProgressMap((prev) => ({ ...prev, [recordId]: current }))
-      message.error((e as Error).message || '保存复习状态失败')
+      errMsg(e, '保存复习状态失败')
     }
   }
-
-  const loadAiReview = async (refresh = false) => {
-    if (!selectedRecord) return
-    if (!getAdminToken()) {
-      message.warning('AI 复盘目前仅对管理员开放，请先登录后台')
-      return
-    }
-    try {
-      setAiLoading(true)
-      const data = await reviewApi.aiReview(selectedRecord.id, refresh)
-      setAiReview(data)
-      setDetailTab('ai')
-      message.success(data.cached ? '已加载缓存复盘' : 'AI 复盘已生成')
-    } catch (e: unknown) {
-      message.error((e as Error).message || 'AI 复盘生成失败')
-    } finally {
-      setAiLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    logApi
-      .filters()
-      .then((data) => setFilterOptions(data || { posts: [], companies: [] }))
-      .catch(() => message.warning('筛选项加载失败，可继续查看已有数据'))
-  }, [])
-
-  useEffect(() => {
-    fetchRecords(1)
-  }, [postFilter, companyFilter])
-
-  useEffect(() => {
-    if (!companyFilter || !postFilter) {
-      setOverview(null)
-      return
-    }
-    setOverviewLoading(true)
-    reviewApi
-      .overview({ company: companyFilter, post: postFilter, days: overviewDays, limit: 80 })
-      .then(setOverview)
-      .catch(() => setOverview(null))
-      .finally(() => setOverviewLoading(false))
-  }, [companyFilter, postFilter, overviewDays])
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams)
@@ -247,100 +177,61 @@ const PublicInterviews: React.FC = () => {
     setSearchParams(next, { replace: true })
   }, [postFilter, companyFilter])
 
-  const renderOverview = () => {
-    if (!companyFilter || !postFilter) {
-      return (
-        <Card className="interview-insight-card">
-          <div className="insight-empty">
-            <BarChartOutlined />
-            <div>
-              <h3>选择一个岗位方向，生成公司面试看板</h3>
-              <p>看板会统计样本数、高频问题和知识点分布，适合面试前快速判断复习重点。</p>
-            </div>
-          </div>
-        </Card>
-      )
-    }
+  useEffect(() => {
+    const recordId = Number(searchParams.get('record'))
+    if (!Number.isInteger(recordId) || recordId <= 0 || openedRecordIdRef.current === recordId) return
+    openedRecordIdRef.current = recordId
+    void openRecordById(recordId)
+  }, [searchParams])
 
-    if (overviewLoading) {
-      return (
-        <Card className="interview-insight-card">
-          <Empty description="正在分析近期面经..." />
-        </Card>
-      )
-    }
+  useEffect(() => {
+    setAnalysisIds(records.slice(0, 4).map((record) => record.id))
+  }, [records])
 
-    if (!overview || overview.empty) {
-      return (
-        <Card className="interview-insight-card">
-          <Empty description={`${companyFilter} / ${postFilter} 暂无足够样本`} />
-        </Card>
-      )
-    }
+  const toggleAnalysisRecord = (recordId: number, checked: boolean) => {
+    setAnalysisIds((prev) => checked ? Array.from(new Set([...prev, recordId])) : prev.filter((id) => id !== recordId))
+  }
 
-    return (
-      <Card className="interview-insight-card">
-        <div className="insight-header">
-          <div>
-            <Text type="secondary">Interview Radar</Text>
-            <h2>{companyFilter} / {postFilter} 高频面试看板</h2>
-          </div>
-          <Select
-            value={overviewDays}
-            onChange={setOverviewDays}
-            options={[
-              { label: '近 7 天', value: 7 },
-              { label: '近 30 天', value: 30 },
-              { label: '近 90 天', value: 90 },
-            ]}
-            style={{ width: 120 }}
-          />
-        </div>
-        <div className="insight-metrics">
-          <div>
-            <strong>{overview.record_count}</strong>
-            <span>分析面经</span>
-          </div>
-          <div>
-            <strong>{overview.question_count}</strong>
-            <span>提取问题</span>
-          </div>
-          <div>
-            <strong>{overview.categories.length}</strong>
-            <span>知识分类</span>
-          </div>
-        </div>
-        <Row gutter={[14, 14]}>
-          <Col xs={24} lg={15}>
-            <div className="insight-panel">
-              <h3><FireOutlined /> 高频问题 Top</h3>
-              <div className="top-question-list">
-                {overview.top_questions.slice(0, 8).map((item, index) => (
-                  <div key={`${item.question}-${index}`} className="top-question-item">
-                    <span>{index + 1}</span>
-                    <p>{item.question}</p>
-                    <Tag color={index < 3 ? 'red' : 'blue'}>{item.count} 次</Tag>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Col>
-          <Col xs={24} lg={9}>
-            <div className="insight-panel">
-              <h3><BarChartOutlined /> 知识点分布</h3>
-              <div className="category-list">
-                {overview.categories.map((item) => (
-                  <div key={item.name}>
-                    <span>{item.name}</span>
-                    <b>{item.count}</b>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </Card>
-    )
+  const toggleAllAnalysisRecords = () => {
+    const ids = visibleRecords.slice(0, 8).map((record) => record.id)
+    const allSelected = ids.length > 0 && ids.every((id) => analysisIds.includes(id))
+    setAnalysisIds(allSelected ? [] : ids)
+  }
+
+  const companySourceMap: Record<string, string> = {
+    腾讯: 'tencent',
+    阿里巴巴: 'alibaba',
+    京东: 'jd',
+    美团: 'meituan',
+    百度: 'baidu',
+    字节跳动: 'bytedance',
+    华为: 'huawei',
+    快手: 'kuaishou',
+  }
+  const postTrackMap: Record<string, string> = {
+    后端开发: 'backend',
+    前端开发: 'frontend',
+    客户端开发: 'client',
+    测试: 'testing',
+    数据开发: 'data',
+    '人工智能/算法': 'ai',
+  }
+
+  const openAiAnalysis = () => {
+    if (!analysisIds.length) {
+      message.warning('请至少选择 1 篇面经')
+      return
+    }
+    const source = companySourceMap[companyFilter] || 'tencent'
+    const track = postTrackMap[postFilter] || 'backend'
+    const params = new URLSearchParams({
+      report: 'job_interviews',
+      ids: analysisIds.slice(0, 8).join(','),
+      source,
+      track,
+      type: source === 'alibaba' ? 'intern' : 'campus',
+    })
+    navigate(`/ai-analysis/create?${params.toString()}`)
   }
 
   return (
@@ -355,6 +246,7 @@ const PublicInterviews: React.FC = () => {
           <Button type="text" onClick={() => navigate('/jobs')}>职位雷达</Button>
           <Button type="text" onClick={() => navigate('/ai-analysis')}>AI 分析</Button>
           <Button type="primary" onClick={() => navigate('/admin')}>后台入口</Button>
+          <UserSessionButton />
         </nav>
       </header>
 
@@ -388,23 +280,39 @@ const PublicInterviews: React.FC = () => {
             </button>
           </div>
 
+          <div className="post-filter-strip">
+            {postOptions.map((option) => {
+              const value = String(option.value ?? '')
+              return (
+                <button key={value || 'all'} className={postFilter === value ? 'active' : ''} onClick={() => setPostFilter(value)}>
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+
           <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} md={7}>
-              <Select value={postFilter} onChange={setPostFilter} options={postOptions} style={{ width: '100%' }} showSearch optionFilterProp="label" />
-            </Col>
-            <Col xs={24} md={7}>
+            <Col xs={24} md={8}>
               <Select value={companyFilter} onChange={setCompanyFilter} options={companyOptions} style={{ width: '100%' }} showSearch optionFilterProp="label" />
             </Col>
-            <Col xs={24} md={7}>
+            <Col xs={24} md={11}>
               <Input prefix={<SearchOutlined />} value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="搜索标题、公司、正文关键词" />
             </Col>
-            <Col xs={24} md={3}>
+            <Col xs={24} md={5}>
               <Button block type="primary" loading={loading} onClick={() => fetchRecords(1)}>刷新</Button>
             </Col>
           </Row>
         </Card>
 
-        {renderOverview()}
+        <ReviewOverviewCard
+          companyFilter={companyFilter}
+          postFilter={postFilter}
+          records={visibleRecords}
+          selectedIds={analysisIds}
+          onToggle={toggleAnalysisRecord}
+          onToggleAll={toggleAllAnalysisRecords}
+          onAnalyze={openAiAnalysis}
+        />
 
         {visibleRecords.length > 0 ? (
           <Row gutter={[16, 16]} className="interview-grid">
@@ -462,189 +370,32 @@ const PublicInterviews: React.FC = () => {
             pageSize={pagination.pageSize}
             total={pagination.total}
             showSizeChanger={false}
-            onChange={(page) => fetchRecords(page, pagination.pageSize)}
+            onChange={(page) => {
+              if (!isAnonymousPageAllowed(page)) {
+                message.info('登录后可以继续浏览更多面经')
+                navigate(userLoginPath(`${location.pathname}${location.search}`))
+                return
+              }
+              void fetchRecords(page, pagination.pageSize)
+            }}
           />
         </div>
       </main>
 
-      <Drawer
-        title={null}
+      <InterviewDetailDrawer
         open={drawerOpen}
-        width={Math.min(window.innerWidth - 24, 980)}
-        onClose={() => setDrawerOpen(false)}
         loading={detailLoading}
-        className="interview-detail-drawer"
-        extra={null}
-      >
-        {selectedRecord && (
-          <div className="interview-detail">
-            <div className="detail-hero-card">
-              <Space size={8} wrap>
-                <Tag color="blue">{selectedRecord.company || '未知公司'}</Tag>
-                <Tag>{selectedRecord.post}</Tag>
-                <Tag color="default">{formatDisplayTime(selectedRecord.edit_time)}</Tag>
-              </Space>
-              <h2>{selectedRecord.title}</h2>
-              <p>
-                这篇面经已整理为原文、Markdown 复盘和复习卡片三个视图。建议先看原文语境，
-                再切到卡片梳理高频问题。
-              </p>
-              <Space wrap>
-                {selectedRecord.content_id && (
-                  <Button href={getNowcoderUrl(selectedRecord)} target="_blank">
-                    查看牛客原文
-                  </Button>
-                )}
-                <Button
-                  icon={selectedProgress?.favorite ? <StarFilled /> : <StarOutlined />}
-                  onClick={() => updateRecordProgress(selectedRecord.id, { favorite: !selectedProgress?.favorite })}
-                >
-                  {selectedProgress?.favorite ? '已收藏' : '收藏'}
-                </Button>
-                <Select
-                  value={selectedProgress?.mastery || 'new'}
-                  options={masteryOptions.map((item) => ({ label: item.label, value: item.value }))}
-                  onChange={(value) => updateRecordProgress(selectedRecord.id, { mastery: value })}
-                  style={{ width: 112 }}
-                />
-                <Button icon={<CopyOutlined />} onClick={copyMarkdown}>
-                  复制 Markdown
-                </Button>
-                <Button type="primary" onClick={() => setDetailTab('cards')}>
-                  查看复习卡片
-                </Button>
-                <Button type="primary" ghost icon={<RobotOutlined />} loading={aiLoading} onClick={() => loadAiReview(false)}>
-                  AI 复盘
-                </Button>
-              </Space>
-            </div>
-
-            <Tabs
-              activeKey={detailTab}
-              onChange={setDetailTab}
-              items={[
-                {
-                  key: 'raw',
-                  label: '原文内容',
-                  children: (
-                    <div className="detail-reading-card raw">
-                      <Paragraph>
-                        {selectedRecord.content || '暂无内容'}
-                      </Paragraph>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'markdown',
-                  label: 'Markdown 复盘',
-                  children: (
-                    <div className="detail-reading-card markdown-body markdown-review-body">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedMarkdown}</ReactMarkdown>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'cards',
-                  label: '复习卡片',
-                  children: (
-                    <div className="review-card-grid">
-                      {reviewCards.length > 0 ? reviewCards.map((card, index) => (
-                        <div className="review-mini-card" key={`${card.title}-${index}`}>
-                          <div>
-                            <span>{String(index + 1).padStart(2, '0')}</span>
-                            <Tag color={index < 3 ? 'red' : 'blue'}>{card.tag}</Tag>
-                          </div>
-                          <h3>{card.title}</h3>
-                          <p>建议补充：核心概念、30 秒答法、常见追问、项目落地点。</p>
-                        </div>
-                      )) : <Empty description="暂无可提取的复习卡片" />}
-                    </div>
-                  ),
-                },
-                {
-                  key: 'ai',
-                  label: 'AI 复盘',
-                  children: (
-                    <div className="detail-reading-card ai-review-body">
-                      {!aiReview ? (
-                        <div className="ai-review-empty">
-                          <RobotOutlined />
-                          <h3>让 AI 帮你把这篇面经变成复习清单</h3>
-                          <p>会生成考察特点、30 秒回答思路、追问方向和行动计划。首次生成可能需要一点时间。</p>
-                          <Space>
-                            <Button type="primary" icon={<RobotOutlined />} loading={aiLoading} onClick={() => loadAiReview(false)}>
-                              生成 AI 复盘
-                            </Button>
-                            <Button loading={aiLoading} onClick={() => loadAiReview(true)}>
-                              重新生成
-                            </Button>
-                          </Space>
-                        </div>
-                      ) : (
-                        <div className="ai-review-content">
-                          <Alert
-                            type="info"
-                            showIcon
-                            message={`${aiReview.review.difficulty} · 优先级 ${aiReview.review.priority}`}
-                            description={aiReview.review.summary}
-                          />
-                          <div className="ai-review-section">
-                            <h3>高频问题与 30 秒答法</h3>
-                            {aiReview.review.questions.map((item, index) => (
-                              <div className="ai-question-card" key={`${item.question}-${index}`}>
-                                <div>
-                                  <span>{String(index + 1).padStart(2, '0')}</span>
-                                  <h4>{item.question}</h4>
-                                </div>
-                                <p>{item.answer}</p>
-                                {!!item.tags?.length && (
-                                  <Space size={6} wrap>
-                                    {item.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
-                                  </Space>
-                                )}
-                                {!!item.followups?.length && (
-                                  <ul>
-                                    {item.followups.map((followup) => <li key={followup}>{followup}</li>)}
-                                  </ul>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <Row gutter={[14, 14]}>
-                            <Col xs={24} lg={12}>
-                              <div className="ai-review-section compact">
-                                <h3>知识点补齐</h3>
-                                {aiReview.review.knowledge_points.map((item) => (
-                                  <div className="knowledge-item" key={item.name}>
-                                    <b>{item.name}</b>
-                                    <p>{item.why}</p>
-                                    <small>{item.review_tip}</small>
-                                  </div>
-                                ))}
-                              </div>
-                            </Col>
-                            <Col xs={24} lg={12}>
-                              <div className="ai-review-section compact">
-                                <h3>复习行动</h3>
-                                <ol>
-                                  {aiReview.review.action_plan.map((item) => <li key={item}>{item}</li>)}
-                                </ol>
-                                <Button loading={aiLoading} onClick={() => loadAiReview(true)}>
-                                  重新生成复盘
-                                </Button>
-                              </div>
-                            </Col>
-                          </Row>
-                        </div>
-                      )}
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          </div>
-        )}
-      </Drawer>
+        record={selectedRecord}
+        selectedProgress={selectedProgress}
+        selectedMarkdown={selectedMarkdown}
+        reviewCards={reviewCards}
+        detailTab={detailTab}
+        masteryOptions={masteryOptions}
+        onClose={closeDetail}
+        onDetailTabChange={setDetailTab}
+        onCopyMarkdown={copyMarkdown}
+        onUpdateProgress={updateRecordProgress}
+      />
     </div>
   )
 }

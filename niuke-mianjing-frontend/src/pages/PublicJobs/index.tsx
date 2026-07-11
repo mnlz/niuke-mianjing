@@ -11,10 +11,14 @@ import {
   SearchOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { recruitmentApi } from '@/api'
 import type { RecruitmentInterview, RecruitmentJob, RecruitmentSource, RecruitmentTrack, RecruitmentType } from '@/api/types'
 import { recruitmentSourceLogos, recruitmentTypeName, recruitmentTypeOptions } from '@/constants/recruitment'
+import { formatDisplayTime } from '@/utils/datetime'
+import { interviewRoute } from './jobUtils'
+import UserSessionButton from '@/components/UserSessionButton'
+import { isAnonymousPageAllowed, userLoginPath } from '@/utils/auth'
 
 const { Paragraph, Text, Title } = Typography
 const PAGE_SIZE = 12
@@ -50,6 +54,7 @@ const renderTextBlocks = (value?: string) => {
 
 const PublicJobs: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sources, setSources] = useState<RecruitmentSource[]>([])
   const [tracks, setTracks] = useState<RecruitmentTrack[]>([])
@@ -184,6 +189,7 @@ const PublicJobs: React.FC = () => {
           <Button type="text" onClick={() => navigate('/interviews')}>面经库</Button>
           <Button type="text" onClick={() => navigate('/ai-analysis')}>AI 分析</Button>
           <Button type="primary" onClick={() => navigate('/jobs')}>职位雷达</Button>
+          <UserSessionButton />
         </nav>
       </header>
 
@@ -311,6 +317,11 @@ const PublicJobs: React.FC = () => {
             total={pagination.total}
             showSizeChanger={false}
             onChange={(page) => {
+              if (!isAnonymousPageAllowed(page)) {
+                message.info('登录后可以继续浏览更多岗位')
+                navigate(userLoginPath(`${location.pathname}${location.search}`))
+                return
+              }
               setPagination((prev) => ({ ...prev, current: page }))
               void loadJobs(page)
               window.scrollTo({ top: 300, behavior: 'smooth' })
@@ -362,8 +373,8 @@ const PublicJobs: React.FC = () => {
               {interviews.length ? (
                 <div className="job-interview-list">
                   {interviews.map((item) => (
-                    <Button key={item.id} type="link" href={item.content_id ? `https://www.nowcoder.com/discuss/${item.content_id}` : undefined} target="_blank">
-                      {item.title} <Text type="secondary">· {item.post || '面经'} · {item.edit_time || ''}</Text>
+                    <Button key={item.id} type="link" onClick={() => navigate(interviewRoute(item))}>
+                      {item.title} <Text type="secondary">· {item.post || '面经'} · {formatDisplayTime(item.edit_time)}</Text>
                     </Button>
                   ))}
                 </div>

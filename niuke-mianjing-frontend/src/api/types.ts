@@ -271,9 +271,38 @@ export interface RecruitmentInterview {
   status: number
 }
 
-export interface RecruitmentAIReportResult {
-  report: string
+export interface ParsedResumeSection {
+  key: string
+  title: string
+  content: string
+}
+
+export interface ParsedResume {
+  text: string
+  name: string
+  phone: string
+  email: string
+  page_count: number
+  char_count: number
+  sections: ParsedResumeSection[]
+}
+
+export interface RecruitmentAIReportRecord {
+  report_code: string
+  title: string
+  report_type: 'job' | 'company_compare' | 'job_interviews' | 'resume_job' | 'full' | 'resume_match'
+  company: string
+  track: string
+  track_name: string
+  recruitment_type: RecruitmentType
+  content: string
   model: string
+  created_at: string
+  updated_at?: string | null
+}
+
+export interface RecruitmentAIReportResult extends RecruitmentAIReportRecord {
+  report: string
 }
 
 export type CardTheme = 'xiaohongshu' | 'bytedance' | 'alibaba' | 'minimal' | 'business'

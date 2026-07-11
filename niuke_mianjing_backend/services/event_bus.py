@@ -1,6 +1,9 @@
 import asyncio
 from typing import Callable, Dict, List, Any
 from niuke_mianjing_backend.schemas.ws import WSMessage, WSMessageType
+from niuke_mianjing_backend.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class EventBus:
@@ -35,7 +38,7 @@ class EventBus:
                     else:
                         callback(ws_msg)
                 except Exception as e:
-                    print(f"EventBus listener error: {e}")
+                    logger.exception("EventBus listener 异常")
 
         await self._broadcast_ws(ws_msg)
 

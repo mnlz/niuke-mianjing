@@ -1,37 +1,15 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowRightOutlined, RiseOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, RobotOutlined, RiseOutlined } from '@ant-design/icons'
 import { Button, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { logApi } from '@/api'
 import type { NiukeRecord, StatsData } from '@/api/types'
 import { companyBrands } from '@/constants/companies'
 import { formatDisplayTime } from '@/utils/datetime'
+import { buildMarketSignals, featuredInterviewCompanies, pickFeaturedInterviews } from './homeUtils'
+import UserSessionButton from '@/components/UserSessionButton'
 
 const { Paragraph, Text, Title } = Typography
-
-const marketSignals = [
-  {
-    index: '01',
-    label: 'AI Engineering',
-    title: 'AI 正在成为工程岗位的通用能力',
-    text: '从 Agent、RAG 到智能化研发工具，大模型能力正在进入后端、客户端与基础架构岗位。',
-    trend: '持续升温',
-  },
-  {
-    index: '02',
-    label: 'Infrastructure',
-    title: '基础架构仍然决定工程上限',
-    text: '分布式系统、性能、稳定性和云原生，依然是大厂技术岗位反复强调的底层能力。',
-    trend: '长期高频',
-  },
-  {
-    index: '03',
-    label: 'Real Experience',
-    title: '项目深度，比技术名词更重要',
-    text: '岗位和面试都在关注真实规模、方案取舍、效果指标，以及你到底解决了什么问题。',
-    trend: '核心信号',
-  },
-]
 
 const capabilityLinks = [
   {
@@ -61,17 +39,15 @@ const PublicHome: React.FC = () => {
 
   useEffect(() => {
     logApi.stats().then(setStats).catch(() => setStats(null))
-    logApi.records({ limit: 20, offset: 0 })
-      .then((data) => {
-        const selected = (data?.data || [])
-          .filter((item) => item.company && item.company !== '未知公司' && item.content?.length > 80)
-          .slice(0, 3)
-        setFeatured(selected)
-      })
+    Promise.all(
+      featuredInterviewCompanies.map((company) => logApi.records({ company, limit: 6, offset: 0 }).then((data) => data?.data || [])),
+    )
+      .then((groups) => setFeatured(pickFeaturedInterviews(groups)))
       .catch(() => setFeatured([]))
   }, [])
 
   const topPosts = [...(stats?.post_stats || [])].sort((a, b) => b.count - a.count).slice(0, 6)
+  const marketSignals = buildMarketSignals(stats)
 
   return (
     <div className="public-page premium-home">
@@ -86,6 +62,7 @@ const PublicHome: React.FC = () => {
           <Button type="text" onClick={() => navigate('/ai-analysis')}>AI 分析</Button>
           <Button type="text" onClick={() => navigate('/admin')}>后台入口</Button>
           <Button type="primary" onClick={() => navigate('/interviews')}>立即开始</Button>
+          <UserSessionButton />
         </nav>
       </header>
 
@@ -102,8 +79,11 @@ const PublicHome: React.FC = () => {
               <Button type="primary" size="large" onClick={() => navigate('/interviews')}>
                 浏览真实面经 <ArrowRightOutlined />
               </Button>
+              <Button className="premium-ai-button" type="primary" size="large" icon={<RobotOutlined />} onClick={() => navigate('/ai-analysis')}>
+                AI 智能分析
+              </Button>
               <Button size="large" onClick={() => navigate('/jobs')}>
-                探索官网职位
+                大厂热门岗位
               </Button>
             </div>
           </section>
@@ -136,8 +116,8 @@ const PublicHome: React.FC = () => {
         <section className="premium-section">
           <div className="premium-section-heading">
             <Text>Market Signals</Text>
-            <Title level={2}>本周市场信号</Title>
-            <Paragraph>从岗位要求里，读懂大厂正在把筹码放在哪里。</Paragraph>
+            <Title level={2}>真实数据里的准备重点</Title>
+            <Paragraph>直接读取当前面经库统计，不再只靠静态判断。</Paragraph>
           </div>
           <div className="signal-list">
             {marketSignals.map((signal) => (
@@ -204,12 +184,14 @@ const PublicHome: React.FC = () => {
         <section className="premium-section featured-section">
           <div className="premium-section-heading">
             <Text>Selected Interviews</Text>
-            <Title level={2}>值得先看的面经</Title>
-            <Paragraph>少一点漫无目的，多一点高质量输入。</Paragraph>
+            <Title level={2}>大厂面经精选</Title>
+            <Paragraph>优先展示字节、腾讯、阿里的真实面经，先看主流大厂怎么问。</Paragraph>
           </div>
           <div className="featured-interviews">
             {(featured.length ? featured : [
               { id: 0, company: '字节跳动', post: '后端开发', title: '后端二面高频问题复盘', content: 'Java、并发、Redis 与项目追问。', edit_time: null },
+              { id: 1, company: '腾讯', post: '后端开发', title: '腾讯后端高频问题复盘', content: '项目、网络、数据库与系统设计追问。', edit_time: null },
+              { id: 2, company: '阿里巴巴', post: '后端开发', title: '阿里后端工程能力面经', content: 'Java、分布式、缓存与项目深挖。', edit_time: null },
             ] as NiukeRecord[]).map((record) => (
               <button key={record.id} onClick={() => navigate(`/interviews?company=${encodeURIComponent(record.company)}&post=${encodeURIComponent(record.post)}`)}>
                 <div><span>{record.company || '大厂面经'}</span><span>{record.post}</span></div>
