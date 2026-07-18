@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Dict, List
 
 from niuke_mianjing_backend.repositories.base import BaseRepository
