@@ -82,3 +82,32 @@ def test_ai_article_requests_json_output(monkeypatch):
     assert captured["json"]["response_format"] == {"type": "json_object"}
     assert captured["json"]["max_tokens"] == 8192
     assert result["title"] == "测试"
+
+
+def test_ai_article_keeps_text_when_cover_provider_is_unavailable(monkeypatch):
+    selected = SimpleNamespace(
+        model="deepseek-v4-flash",
+        endpoint="https://api.deepseek.com/chat/completions",
+        api_key="encrypted-at-rest-key",
+    )
+    monkeypatch.setattr(wechat_module.settings, "OPENAI_API_KEY", "image-provider-key")
+    monkeypatch.setattr(wechat_module.ai_model_registry, "resolve", lambda: selected)
+    monkeypatch.setattr(wechat_module.requests, "post", lambda *args, **kwargs: FakeJsonResponse())
+    service = wechat_module.WeChatService()
+
+    def unavailable_cover(prompt):
+        del prompt
+        raise ValueError("image model unavailable")
+
+    monkeypatch.setattr(service, "_generate_cover_with_openai", unavailable_cover)
+
+    async def fake_save(**kwargs):
+        return kwargs
+
+    monkeypatch.setattr(service, "save_ai_article", fake_save)
+
+    result = asyncio.run(service.generate_ai_article("# 输入", title="测试"))
+
+    assert result["title"] == "测试"
+    assert result["cover_base64"] is None
+    assert result["cover_mime"] is None

@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import tempfile
 from collections import Counter
@@ -49,6 +50,9 @@ from niuke_mianjing_backend.services.wechat_formatter import (
     render_markdown_as_raphael_html,
     render_raphael_wechat_html,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class WeChatService:
@@ -107,7 +111,6 @@ class WeChatService:
         wechat_theme: Optional[str] = None,
     ) -> Dict[str, Any]:
         self._ensure_text_model_configured()
-        self._ensure_image_model_configured()
 
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         prompt = _build_article_json_prompt(markdown_content, title or fallback, style)
@@ -117,7 +120,11 @@ class WeChatService:
         article_digest = digest or article.get("digest") or self._plain_text(article.get("html", ""))[:100]
         html = self._ensure_wechat_html(article_title, article.get("html", ""), style, wechat_theme)
         image_prompt = article.get("cover_prompt") or _build_cover_prompt(article_title, markdown_content, style)
-        cover_base64 = self._generate_cover_with_openai(image_prompt)
+        try:
+            cover_base64 = self._generate_cover_with_openai(image_prompt)
+        except ValueError as exc:
+            logger.warning("AI 稿件封面生成失败，保留正文：%s", exc)
+            cover_base64 = None
 
         return await self.save_ai_article(
             markdown_content=markdown_content,
@@ -131,7 +138,7 @@ class WeChatService:
             wechat_theme=wechat_theme,
             cover_prompt=image_prompt,
             cover_base64=cover_base64,
-            cover_mime="image/png",
+            cover_mime="image/png" if cover_base64 else None,
             status="generated",
         )
 
