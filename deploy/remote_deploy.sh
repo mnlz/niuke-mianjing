@@ -9,7 +9,7 @@ WEB_PORT="${WEB_PORT:-8080}"
 API_PORT="${API_PORT:-8000}"
 NIUKE_SERVER_NAME="${NIUKE_SERVER_NAME:-mnls.cloud}"
 
-dnf install -y python3 python3-pip nginx mariadb-server curl policycoreutils-python-utils >/dev/null
+dnf install -y python3 python3-pip python3.11 python3.11-pip nginx mariadb-server curl policycoreutils-python-utils >/dev/null
 systemctl enable --now mariadb nginx >/dev/null
 
 mkdir -p "$APP_DIR"
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS \`crawl_log\` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SQL
 
-python3 -m venv "${CURRENT_DIR}.new/.venv"
+python3.11 -m venv "${CURRENT_DIR}.new/.venv"
 "${CURRENT_DIR}.new/.venv/bin/python" -m pip install --upgrade pip >/dev/null
 "${CURRENT_DIR}.new/.venv/bin/pip" install -r "${CURRENT_DIR}.new/requirements.txt"
 (cd "${CURRENT_DIR}.new" && .venv/bin/python -c "from niuke_mianjing_backend.api.app import app")
