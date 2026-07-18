@@ -13,8 +13,8 @@ from bs4 import BeautifulSoup
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.wechat_article_repo import WeChatArticleRepository
+from niuke_mianjing_backend.services.ai_model_registry import ai_model_registry
 from niuke_mianjing_backend.services.openai_client import (
-    chat_completions_url,
     ensure_openai_configured,
     extract_chat_completion_text,
     image_generations_url,
@@ -106,7 +106,8 @@ class WeChatService:
         style: str = "tech",
         wechat_theme: Optional[str] = None,
     ) -> Dict[str, Any]:
-        self._ensure_openai_configured()
+        self._ensure_text_model_configured()
+        self._ensure_image_model_configured()
 
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         prompt = _build_article_json_prompt(markdown_content, title or fallback, style)
@@ -150,13 +151,12 @@ class WeChatService:
         cover_mime: Optional[str] = None,
         status: str = "edited",
     ) -> Dict[str, Any]:
-        self._ensure_openai_configured()
         final_html = self._ensure_wechat_html(title, html, style, wechat_theme)
         prompt = cover_prompt or _build_cover_prompt(title, markdown_content, style)
         final_cover_base64 = normalize_base64_image(cover_base64) if cover_base64 else None
         final_cover_mime = cover_mime or "image/png"
         model_info = {
-            "text_model": settings.OPENAI_TEXT_MODEL,
+            "text_model": ai_model_registry.resolve().model,
             "image_model": settings.OPENAI_IMAGE_MODEL,
             "style": style,
             "wechat_theme": wechat_theme or "auto",
@@ -187,7 +187,7 @@ class WeChatService:
         style: str,
         cover_prompt: Optional[str] = None,
     ) -> Dict[str, str]:
-        self._ensure_openai_configured()
+        self._ensure_image_model_configured()
         prompt = cover_prompt or _build_cover_prompt(title, markdown_content, style)
         cover_base64 = self._generate_cover_with_openai(prompt)
         return {
@@ -203,7 +203,7 @@ class WeChatService:
         style: str,
         wechat_theme: Optional[str] = None,
     ) -> Generator[Dict[str, Any], None, None]:
-        self._ensure_openai_configured()
+        self._ensure_text_model_configured()
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         article_title = title or fallback
         prompt = _build_stream_html_prompt(markdown_content, article_title, style)
@@ -215,7 +215,7 @@ class WeChatService:
         title: Optional[str],
         style: str,
     ) -> Generator[Dict[str, Any], None, None]:
-        self._ensure_openai_configured()
+        self._ensure_text_model_configured()
         fallback = self.parse_markdown(markdown_content, title or "未命名文章")[2]
         article_title = title or fallback
         prompt = _build_stream_markdown_prompt(markdown_content, article_title, style)
@@ -527,15 +527,21 @@ class WeChatService:
             "wechat_response": draft,
         }
 
-    def _ensure_openai_configured(self):
+    @staticmethod
+    def _ensure_text_model_configured():
+        ai_model_registry.resolve()
+
+    @staticmethod
+    def _ensure_image_model_configured():
         ensure_openai_configured()
 
     def _openai_headers(self) -> Dict[str, str]:
         return openai_headers()
 
     def _generate_article_json(self, prompt: str) -> Dict[str, str]:
+        selected = ai_model_registry.resolve()
         payload = {
-            "model": settings.OPENAI_TEXT_MODEL,
+            "model": selected.model,
             "messages": [
                 {
                     "role": "system",
@@ -545,9 +551,12 @@ class WeChatService:
             ],
         }
         response = requests.post(
-            self._chat_completions_url(),
-            headers=self._openai_headers(),
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            selected.endpoint,
+            headers={
+                "Authorization": f"Bearer {selected.api_key}",
+                "Content-Type": "application/json; charset=utf-8",
+            },
+            json=payload,
             timeout=90,
         )
         data = response.json()
@@ -588,10 +597,6 @@ class WeChatService:
         return resize_cover_base64(image_base64)
 
     @staticmethod
-    def _chat_completions_url() -> str:
-        return chat_completions_url()
-
-    @staticmethod
     def _image_generations_url() -> str:
         return image_generations_url()
 
@@ -605,8 +610,9 @@ class WeChatService:
         user_prompt: str,
         error_prefix: str,
     ) -> Generator[str, None, None]:
+        selected = ai_model_registry.resolve()
         payload = {
-            "model": settings.OPENAI_TEXT_MODEL,
+            "model": selected.model,
             "stream": True,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -614,9 +620,12 @@ class WeChatService:
             ],
         }
         response = requests.post(
-            self._chat_completions_url(),
-            headers=self._openai_headers(),
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            selected.endpoint,
+            headers={
+                "Authorization": f"Bearer {selected.api_key}",
+                "Content-Type": "application/json; charset=utf-8",
+            },
+            json=payload,
             stream=True,
             timeout=(10, 240),
         )
