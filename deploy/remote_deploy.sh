@@ -111,6 +111,7 @@ SQL
 python3 -m venv "${CURRENT_DIR}.new/.venv"
 "${CURRENT_DIR}.new/.venv/bin/python" -m pip install --upgrade pip >/dev/null
 "${CURRENT_DIR}.new/.venv/bin/pip" install -r "${CURRENT_DIR}.new/requirements.txt"
+(cd "${CURRENT_DIR}.new" && .venv/bin/python -c "from niuke_mianjing_backend.api.app import app")
 
 if [ -d "$CURRENT_DIR" ]; then
   rm -rf "${CURRENT_DIR}.previous"
@@ -241,4 +242,12 @@ done
 
 echo "Backend health check failed." >&2
 journalctl -u niuke-mianjing --no-pager -n 120 >&2
+if [ -d "${CURRENT_DIR}.previous" ]; then
+  FAILED_DIR="${APP_DIR}/failed-$(date +%Y%m%d-%H%M%S)"
+  systemctl stop niuke-mianjing
+  mv "$CURRENT_DIR" "$FAILED_DIR"
+  mv "${CURRENT_DIR}.previous" "$CURRENT_DIR"
+  systemctl start niuke-mianjing
+  echo "Rolled back to previous release. Failed release: ${FAILED_DIR}" >&2
+fi
 exit 1

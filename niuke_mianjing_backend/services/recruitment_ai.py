@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from niuke_mianjing_backend.services.openai_client import extract_chat_completion_text, post_chat_completion
