@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { ApiResponse } from './types'
-import { getAdminToken, getVisitorId } from '@/utils/auth'
+import { getAdminToken, getUserToken, getVisitorId } from '@/utils/auth'
 
 const client = axios.create({
   baseURL: '',
@@ -12,8 +12,10 @@ const client = axios.create({
 
 client.interceptors.request.use((config) => {
   const adminToken = getAdminToken()
+  const userToken = getUserToken()
   config.headers.set('X-Visitor-ID', getVisitorId())
   if (adminToken) config.headers.set('X-Admin-Token', adminToken)
+  if (userToken) config.headers.set('X-User-Token', userToken)
   return config
 })
 

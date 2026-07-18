@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OfferLens · AI 分析配置静态原型</title>
+  <style>
+    :root { --blue:#1769ff; --blue-soft:#edf5ff; --ink:#101828; --muted:#667085; --line:#dbe4f0; --bg:#f5f8fc; --green:#12a150; --amber:#d97706; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif; }
+    button,input,textarea { font:inherit; }
+    button { cursor:pointer; }
+    .topbar { position:sticky; z-index:20; top:0; height:70px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:18px; padding:0 28px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.94); backdrop-filter:blur(16px); }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .brand-mark { width:40px; height:40px; display:grid; place-items:center; border-radius:11px; background:linear-gradient(145deg,#0b5cff,#2e86ff); color:#fff; font-weight:900; box-shadow:0 8px 20px rgba(23,105,255,.24); }
+    .brand strong { display:block; font-size:17px; letter-spacing:.01em; }
+    .brand small { display:block; margin-top:2px; color:#8ca0ba; font-size:8px; font-weight:800; letter-spacing:.22em; }
+    .topnav { padding:4px; display:flex; gap:3px; border:1px solid var(--line); border-radius:11px; background:#f8fafc; }
+    .topnav button { height:36px; padding:0 17px; border:0; border-radius:8px; background:transparent; color:#344054; }
+    .topnav button.active { background:#fff; color:var(--blue); box-shadow:0 2px 8px rgba(16,24,40,.08); }
+    .account { justify-self:end; display:flex; align-items:center; gap:14px; color:#344054; font-size:13px; }
+    .account i { width:8px; height:8px; border-radius:50%; background:#22c55e; }
+    .prototype-badge { padding:5px 8px; border:1px solid #f4c96b; border-radius:6px; background:#fff9e8; color:#9a6700; font:8px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em; }
+    main { width:min(1240px,calc(100% - 48px)); margin:0 auto; padding:38px 0 60px; }
+    .page-title { margin-bottom:24px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; }
+    .eyebrow { color:var(--blue); font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.17em; }
+    h1 { margin:7px 0 5px; font-size:30px; letter-spacing:-.03em; }
+    .page-title p { margin:0; color:var(--muted); font-size:14px; }
+    .save { display:flex; align-items:center; gap:7px; color:#8091a7; font-size:10px; }
+    .save i { width:8px; height:8px; border:2px solid #dbeafe; border-top-color:var(--blue); border-radius:50%; animation:spin 1.3s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .workspace { display:grid; grid-template-columns:220px minmax(0,1fr) 330px; align-items:start; gap:18px; }
+    .steps,.panel,.preview { border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .steps { position:sticky; top:92px; padding:14px; }
+    .progress-head { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .progress { height:4px; margin:9px 0 14px; overflow:hidden; border-radius:99px; background:#edf1f6; }
+    .progress i { width:71.4%; height:100%; display:block; background:var(--blue); transition:width .2s; }
+    .step { width:100%; min-height:58px; padding:9px 7px; display:grid; grid-template-columns:30px 1fr; align-items:center; gap:8px; border:0; border-radius:9px; background:transparent; color:#344054; text-align:left; }
+    .step:hover { background:#f8fafc; }
+    .step.active { background:var(--blue-soft); color:#155ee7; }
+    .step-num { width:28px; height:28px; display:grid; place-items:center; border:1px solid #cad7e7; border-radius:50%; background:#fff; color:#64748b; font-size:10px; }
+    .step.done .step-num { border-color:#a7edc1; background:#effcf4; color:var(--green); }
+    .step.active .step-num { border-color:var(--blue); background:var(--blue); color:#fff; }
+    .step b,.step small { display:block; }
+    .step b { font-size:11px; }
+    .step small { margin-top:3px; color:#98a6ba; font-size:8px; }
+    .draft-note { margin-top:12px; padding:12px; border-radius:8px; background:#f8fafc; color:#718096; font-size:9px; line-height:1.5; }
+    .panel { overflow:hidden; }
+    .panel-body { padding:28px; }
+    .step-heading span { color:var(--blue); font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.15em; }
+    .step-heading h2 { margin:9px 0 5px; font-size:25px; letter-spacing:-.02em; }
+    .step-heading p { margin:0 0 22px; color:var(--muted); font-size:12px; }
+    .upload { min-height:70px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px dashed #bfd0e5; border-radius:10px; background:#fbfdff; color:#334155; font-size:11px; }
+    .upload .pdf { color:var(--blue); font-size:20px; }
+    .upload small { color:#91a1b6; }
+    .resume-box { margin-top:14px; padding:19px; border:1px solid #acd0ff; border-radius:12px; background:#f8fbff; }
+    .resume-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .resume-head span { color:var(--blue); font-size:9px; font-weight:800; letter-spacing:.12em; }
+    .resume-head h3 { margin:4px 0 0; font-size:15px; }
+    .status { padding:5px 8px; border:1px solid #f3ce72; border-radius:7px; background:#fff9e7; color:var(--amber); font-size:9px; }
+    .status.confirmed { border-color:#9ee3b8; background:#effcf4; color:var(--green); }
+    .metrics { margin:15px 0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .metric { min-width:0; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    .metric small,.metric b { display:block; }
+    .metric small { color:#8493a8; font-size:8px; }
+    .metric b { margin-top:4px; overflow:hidden; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+    .editor-block { margin-top:10px; padding:14px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+    .block-title { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .block-title div { display:grid; gap:3px; }
+    .block-title b { font-size:11px; }
+    .block-title small { color:#8a99ad; font-size:8px; }
+    .block-title span { color:#9aa9bd; font:7px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.13em; }
+    .profile-grid { margin-top:11px; display:grid; grid-template-columns:.8fr 1fr 1.25fr; gap:8px; }
+    label.field { min-width:0; display:grid; gap:5px; color:#7e8da2; font-size:8px; }
+    label.field input { min-width:0; height:35px; padding:0 10px; border:1px solid var(--line); border-radius:7px; outline:0; background:#f8fafc; color:#27364a; font-size:10px; font-weight:700; }
+    label.field input:focus { border-color:#7ab1ff; box-shadow:0 0 0 3px rgba(23,105,255,.08); }
+    .sections { margin-top:11px; display:grid; gap:8px; }
+    .section-card { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    .section-card.editing { border-color:#82b7ff; box-shadow:0 0 0 3px rgba(23,105,255,.08); }
+    .section-card header { min-height:42px; padding:7px 10px 7px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid #edf1f6; background:#f8fafc; }
+    .section-card header div { display:flex; align-items:center; gap:8px; }
+    .section-card header i { color:var(--blue); font:7px ui-monospace,SFMono-Regular,Menlo,monospace; font-style:normal; }
+    .section-card header b { font-size:10px; }
+    .edit-btn { padding:5px 8px; border:0; border-radius:6px; background:transparent; color:var(--blue); font-size:9px; }
+    .edit-btn:hover { background:#eaf3ff; }
+    .section-copy { padding:11px 14px 12px 28px; }
+    .section-copy p { position:relative; margin:0 0 5px; color:#526277; font-size:9px; line-height:1.65; white-space:pre-wrap; }
+    .section-copy p:last-child { margin-bottom:0; }
+    .section-copy p::before { content:""; position:absolute; top:.62em; left:-11px; width:4px; height:4px; border-radius:50%; background:#bdd7fb; }
+    .section-editor { width:100%; min-height:150px; padding:12px 14px; display:none; border:0; outline:0; resize:vertical; color:#344054; font-size:9px; line-height:1.7; }
+    .section-card.editing .section-copy { display:none; }
+    .section-card.editing .section-editor { display:block; }
+    details.raw { margin-top:10px; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:#fff; }
+    details.raw summary { padding:12px 14px; display:flex; justify-content:space-between; cursor:pointer; list-style:none; }
+    details.raw summary::-webkit-details-marker { display:none; }
+    details.raw summary b,details.raw summary small { display:block; }
+    details.raw summary b { font-size:10px; }
+    details.raw summary small { margin-top:3px; color:#8a99ad; font-size:8px; }
+    details.raw summary span { color:#9aa9bd; font:7px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.12em; }
+    .raw-body { padding:12px; border-top:1px solid var(--line); }
+    .raw-body textarea { width:100%; min-height:220px; padding:11px; border:1px solid var(--line); border-radius:7px; resize:vertical; color:#455468; font:9px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .confirm-row { margin-top:13px; display:flex; align-items:center; justify-content:space-between; gap:15px; }
+    .confirm-row p { max-width:330px; margin:0; color:#7c8ca1; font-size:8px; line-height:1.55; }
+    .primary { height:36px; padding:0 16px; border:0; border-radius:8px; background:var(--blue); color:#fff; box-shadow:0 7px 16px rgba(23,105,255,.2); }
+    .primary:disabled { background:#c8d2df; box-shadow:none; cursor:default; }
+    .panel-actions { padding:14px 20px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--line); }
+    .ghost { height:35px; padding:0 14px; border:1px solid var(--line); border-radius:8px; background:#fff; color:#344054; }
+    .preview-wrap { position:sticky; top:92px; }
+    .preview-label { margin:0 0 9px 2px; display:flex; align-items:center; justify-content:space-between; color:var(--blue); font:800 9px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.14em; }
+    .preview-label em { padding:4px 7px; border:1px solid #a8df7d; border-radius:5px; background:#f5ffed; color:#3b9417; font-style:normal; }
+    .preview { overflow:hidden; box-shadow:0 22px 48px rgba(36,51,77,.11); }
+    .preview-top { padding:12px 15px; display:flex; justify-content:space-between; border-bottom:1px solid var(--line); font-size:10px; font-weight:700; }
+    .preview-top span { color:#9aa9bd; font:8px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .preview-body { padding:25px 20px; }
+    .preview-body > small { color:#93a2b6; font-size:8px; }
+    .preview-body h3 { margin:7px 0 3px; font-size:21px; }
+    .preview-body > p { margin:0; color:#68788d; font-size:10px; }
+    .preview-stats { margin:18px 0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .preview-stats div { padding:12px; border:1px solid var(--line); border-radius:8px; }
+    .preview-stats small,.preview-stats b { display:block; }
+    .preview-stats small { color:#8796aa; font-size:8px; }
+    .preview-stats b { margin-top:5px; color:var(--blue); font-size:12px; }
+    .questions { padding-top:13px; border-top:1px solid var(--line); }
+    .questions b { font-size:10px; }
+    .questions ul { margin:8px 0 0; padding-left:16px; color:#5e6d82; font-size:9px; line-height:1.8; }
+    .safe { margin-top:17px; padding:10px; border-radius:7px; background:#effcf4; color:#258247; font-size:8px; }
+    .toast { position:fixed; z-index:40; right:24px; bottom:24px; padding:11px 15px; border-radius:8px; background:#101828; color:#fff; font-size:10px; box-shadow:0 12px 32px rgba(16,24,40,.25); opacity:0; transform:translateY(10px); pointer-events:none; transition:.2s; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:1050px) { .workspace { grid-template-columns:190px minmax(0,1fr); } .preview-wrap { display:none; } }
+    @media (max-width:760px) { .topbar { grid-template-columns:1fr auto; padding:0 16px; } .topnav { display:none; } .account span { display:none; } main { width:min(100% - 24px,680px); padding-top:24px; } .workspace { grid-template-columns:1fr; } .steps { position:static; display:flex; overflow:auto; } .progress-head,.progress,.draft-note { display:none; } .step { min-width:126px; } .page-title { align-items:flex-start; flex-direction:column; } .profile-grid,.metrics { grid-template-columns:1fr; } .panel-body { padding:18px; } .confirm-row { align-items:stretch; flex-direction:column; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">O</div><div><strong>OfferLens</strong><small>AI INSIGHTS</small></div><em class="prototype-badge">LOCAL PROTOTYPE</em></div>
+    <nav class="topnav"><button class="active">AI 分析</button><button>我的报告</button></nav>
+    <div class="account"><i></i><span>远山熊猫·3577</span><b>退出</b></div>
+  </header>
+
+  <main>
+    <div class="page-title"><div><span class="eyebrow">ANALYSIS SETUP</span><h1>新建分析报告</h1><p>按步骤组合本次分析要使用的数据，右侧会同步显示报告范围。</p></div><span class="save"><i></i> 自动保存 · 刚刚</span></div>
+    <div class="workspace">
+      <aside class="steps">
+        <div class="progress-head"><span>配置进度</span><b id="progressText">5 / 7</b></div><div class="progress"><i id="progressBar"></i></div>
+        <button class="step done" data-step="1"><span class="step-num">✓</span><span><b>分析类型</b><small>选择一个报告场景</small></span></button>
+        <button class="step done" data-step="2"><span class="step-num">✓</span><span><b>目标公司</b><small>选择已接入公司</small></span></button>
+        <button class="step done" data-step="3"><span class="step-num">✓</span><span><b>目标岗位</b><small>校招 / 社招 / 实习</small></span></button>
+        <button class="step done" data-step="4"><span class="step-num">✓</span><span><b>面经范围</b><small>匹配近期真实面经</small></span></button>
+        <button class="step active" data-step="5"><span class="step-num">5</span><span><b>个人简历</b><small>解析并确认内容</small></span></button>
+        <button class="step" data-step="6"><span class="step-num">6</span><span><b>分析模型</b><small>选择分析模型</small></span></button>
+        <button class="step" data-step="7"><span class="step-num">7</span><span><b>确认生成</b><small>预计约 60 秒</small></span></button>
+        <div class="draft-note">✓ 配置已自动保存在当前浏览器</div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-body">
+          <div class="step-heading"><span>STEP 05 / 07</span><h2>加入个人简历</h2><p>系统会将你的经历逐项映射到岗位要求，并给出修改建议。</p></div>
+          <div class="upload"><span class="pdf">▣</span><b>刘子扬+南京邮电大学+电子信息.pdf</b><small>重新上传会替换当前解析结果</small></div>
+
+          <div class="resume-box">
+            <div class="resume-head"><div><span>简历解析结果</span><h3>刘子扬+南京邮电大学+电子信息.pdf</h3></div><em class="status" id="status">待确认</em></div>
+            <div class="metrics">
+              <div class="metric"><small>姓名</small><b data-meta="name">刘子扬</b></div><div class="metric"><small>邮箱</small><b data-meta="email">285625439@qq.com</b></div><div class="metric"><small>手机号</small><b data-meta="phone">15372257175</b></div><div class="metric"><small>PDF 页数</small><b>1 页</b></div><div class="metric"><small>解析字数</small><b>2,145</b></div>
+            </div>
+
+            <section class="editor-block"><div class="block-title"><div><b>基本信息</b><small>检查解析结果，点击即可修改</small></div><span>PROFILE</span></div><div class="profile-grid"><label class="field">姓名<input value="刘子扬" data-field="name"></label><label class="field">手机号<input value="15372257175" data-field="phone"></label><label class="field">邮箱<input value="285625439@qq.com" data-field="email"></label></div></section>
+
+            <section class="editor-block"><div class="block-title"><div><b>简历正文</b><small>5 个已识别分区</small></div><span>CONTENT</span></div><div class="sections">
+              <article class="section-card"><header><div><i>01</i><b>教育经历</b></div><button class="edit-btn" data-action="edit">✎ 编辑</button></header><div class="section-copy"><p>南京邮电大学 双一流 2022年09月 - 2025年07月</p><p>电子信息 硕士 计算机、软件、网络空间安全学院 江苏南京</p><p>华北理工大学 2019年09月 - 2022年07月</p><p>计算机科学与技术 本科 人工智能学院 河北唐山</p><p>部队服役 2017年09月 - 2019年09月</p><p>侦察专业 服役 福建漳州</p><p>华北理工大学 2016年09月 - 2017年09月</p><p>计算机科学与技术 本科 人工智能学院 河北唐山</p></div><textarea class="section-editor" aria-label="编辑教育经历"></textarea></article>
+              <article class="section-card"><header><div><i>02</i><b>实习经历</b></div><button class="edit-btn" data-action="edit">✎ 编辑</button></header><div class="section-copy"><p>字节跳动（南京）科技研发有限公司 2023年09月 - 2024年01月</p><p>软件测试开发实习生 Data部门 南京</p><p>实习描述：参与 DataFinder 私有化版本迭代后的服务器性能测试，负责设计测试用例和执行全面测试计划，确保新功能的稳定性和性能满足上线需求。</p><p>主要工作：脚本编写、性能测试、性能分析、报告编写。</p><p>使用 SSH 配置并执行造数脚本；基于 K6 和 Sophon Evals 完成性能与自动化测试。</p><p>使用 Grafana 分析服务器性能指标，编写性能测试报告并向开发团队提供优化建议。</p></div><textarea class="section-editor" aria-label="编辑实习经历"></textarea></article>
+              <article class="section-card"><header><div><i>03</i><b>项目经历</b></div><button class="edit-btn" data-action="edit">✎ 编辑</button></header><div class="section-copy"><p>国网隧道智能监控与远程通信系统 2022年12月 - 2023年03月</p><p>导师牵头与江苏国电合作的产品科研型项目，应用于隧道气体数据检测、远程作业监控调试与通信信号采集。</p><p>负责硬件选型、后台服务、客户端及业务模块开发，并预研跨局域网通信。</p><p>选择 STM32、MQTT 与 LORA；基于 Select/Epoll、线程池和自定义数据帧完成网络模块。</p><p>实现 HTTP 登录服务、远程协助、屏幕监控、气体数据解析以及 UDP 穿透预研。</p><p>使用 MVC 对项目重构，降低界面与数据耦合。</p></div><textarea class="section-editor" aria-label="编辑项目经历"></textarea></article>
+              <article class="section-card"><header><div><i>04</i><b>专业技能</b></div><button class="edit-btn" data-action="edit">✎ 编辑</button></header><div class="section-copy"><p>熟练使用 C++，熟悉 C++11、STL 常见容器及常用数据结构和算法。</p><p>熟悉 HTTP、HTTPS、TCP/UDP、IP、DNS、Socket、多线程及 I/O 多路复用。</p><p>掌握常见设计模式，了解 MySQL 索引、事务、锁与 MVCC。</p><p>熟悉 Linux、gcc、gdb、vim、git，以及 K6、Grafana 等性能测试和监控工具。</p><p>英语 CET-4、CET-6；集成电路 EDA 设计精英挑战赛全国三等奖、研究生学业奖学金三等奖、部队嘉奖。</p></div><textarea class="section-editor" aria-label="编辑专业技能"></textarea></article>
+              <article class="section-card"><header><div><i>05</i><b>个人总结</b></div><button class="edit-btn" data-action="edit">✎ 编辑</button></header><div class="section-copy"><p>性格沉着稳重，对待工作认真严谨，有较强责任心，能够吃苦耐劳且善于学习。</p><p>待人随和，适应新环境，擅长交流和时间管理。</p><p>能够正确认识错误并从中总结经验、持续提高。</p></div><textarea class="section-editor" aria-label="编辑个人总结"></textarea></article>
+            </div></section>
+
+            <details class="raw"><summary><div><b>高级编辑</b><small>解析异常时直接修改原始文本</small></div><span>RAW TEXT</span></summary><div class="raw-body"><textarea id="rawText" aria-label="原始简历文本"></textarea></div></details>
+            <div class="confirm-row"><p>确认后系统才会把以上内容用于岗位匹配和报告生成；再次编辑会自动撤销确认。</p><button class="primary" id="confirm" data-action="confirm">✓ 确认使用此简历</button></div>
+          </div>
+        </div>
+        <footer class="panel-actions"><button class="ghost" id="previous">← 上一步</button><button class="primary" id="next">下一步 →</button></footer>
+      </section>
+
+      <aside class="preview-wrap"><div class="preview-label"><span>LIVE PREVIEW</span><em>SYNCING</em></div><section class="preview"><div class="preview-top"><b>OfferLens Report</b><span># DRAFT</span></div><div class="preview-body"><small>全景求职研判</small><h3>腾讯</h3><p>后端开发 · 校招</p><div class="preview-stats"><div><small>岗位数据</small><b>实时读取</b></div><div><small>面经样本</small><b>8</b></div></div><div class="questions"><b>本报告将回答</b><ul><li>这个方向最近在招什么、要求什么？</li><li>我的准备顺序应该如何安排？</li><li>简历与岗位有哪些匹配和缺口？</li><li>近期面试最可能追问哪些问题？</li></ul></div><div class="safe">✓ 仅使用你在左侧确认的数据范围</div></div></section></aside>
+    </div>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const toast = (text) => { const node = document.querySelector('#toast'); node.textContent = text; node.classList.add('show'); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => node.classList.remove('show'), 1600) }
+    const markDirty = () => { const status = document.querySelector('#status'); status.textContent = '待确认'; status.classList.remove('confirmed'); const button = document.querySelector('#confirm'); button.disabled = false; button.textContent = '✓ 确认使用此简历' }
+    const buildRawText = () => {
+      const profile = [...document.querySelectorAll('[data-field]')].map((node) => node.value).join(' | ')
+      const sections = [...document.querySelectorAll('.section-card')].map((card) => `${card.querySelector('header b').textContent}\n${[...card.querySelectorAll('.section-copy p')].map((p) => p.textContent).join('\n')}`).join('\n\n')
+      return `${profile}\n\n${sections}`
+    }
+    document.querySelectorAll('[data-field]').forEach((input) => input.addEventListener('input', () => { document.querySelector(`[data-meta="${input.dataset.field}"]`).textContent = input.value || '未填写'; markDirty() }))
+    document.querySelectorAll('[data-action="edit"]').forEach((button) => button.addEventListener('click', () => {
+      const card = button.closest('.section-card'); const editor = card.querySelector('.section-editor'); const editing = card.classList.toggle('editing')
+      if (editing) { editor.value = [...card.querySelectorAll('.section-copy p')].map((p) => p.textContent).join('\n'); button.textContent = '✓ 完成'; editor.focus() }
+      else { const copy = card.querySelector('.section-copy'); copy.replaceChildren(...editor.value.split(/\n+/).filter(Boolean).map((line) => { const p = document.createElement('p'); p.textContent = line; return p })); button.textContent = '✎ 编辑'; markDirty() }
+    }))
+    document.querySelector('.raw').addEventListener('toggle', (event) => { if (event.target.open) document.querySelector('#rawText').value = buildRawText() })
+    document.querySelector('#rawText').addEventListener('input', markDirty)
+    document.querySelector('#confirm').addEventListener('click', () => { const status = document.querySelector('#status'); status.textContent = '已确认'; status.classList.add('confirmed'); const button = document.querySelector('#confirm'); button.textContent = '✓ 已确认'; button.disabled = true; toast('简历内容已确认') })
+    const activateStep = (number) => { document.querySelectorAll('.step').forEach((step) => { const value = Number(step.dataset.step); step.classList.toggle('active', value === number); step.classList.toggle('done', value < number); step.querySelector('.step-num').textContent = value < number ? '✓' : value }); document.querySelector('#progressText').textContent = `${number} / 7`; document.querySelector('#progressBar').style.width = `${number / 7 * 100}%`; if (number !== 5) toast(`静态原型保留当前第 5 步数据，已预览第 ${number} 步状态`) }
+    document.querySelectorAll('.step').forEach((step) => step.addEventListener('click', () => activateStep(Number(step.dataset.step))))
+    document.querySelector('#previous').addEventListener('click', () => activateStep(4))
+    document.querySelector('#next').addEventListener('click', () => activateStep(6))
+  </script>
+</body>
+</html>

@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OfferLens · AI 求职情报概念稿</title>
+    <style>
+      :root {
+        --ink: #111813;
+        --muted: #667168;
+        --paper: #f3f4ee;
+        --card: #fffef9;
+        --line: #dce0d7;
+        --lime: #c9f45c;
+        --lime-deep: #698d11;
+        --teal: #137a70;
+        --blue: #2e5cd6;
+        --orange: #df6f35;
+        --shadow: 0 18px 50px rgba(22, 33, 25, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 88% -10%, rgba(201, 244, 92, 0.3), transparent 24rem),
+          var(--paper);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      }
+
+      button {
+        color: inherit;
+        font: inherit;
+      }
+
+      .topbar {
+        position: sticky;
+        z-index: 20;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 68px;
+        padding: 0 34px;
+        color: #f8fff4;
+        background: rgba(17, 24, 19, 0.96);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(14px);
+      }
+
+      .brand,
+      .top-actions,
+      .nav {
+        display: flex;
+        align-items: center;
+      }
+
+      .brand {
+        gap: 11px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        color: var(--ink);
+        background: var(--lime);
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .nav {
+        gap: 8px;
+        margin-left: 36px;
+      }
+
+      .nav a {
+        padding: 8px 12px;
+        color: #aeb8b0;
+        border-radius: 8px;
+        font-size: 13px;
+        text-decoration: none;
+      }
+
+      .nav a.active {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .top-actions {
+        gap: 10px;
+      }
+
+      .concept-tag {
+        padding: 7px 10px;
+        color: var(--lime);
+        border: 1px solid rgba(201, 244, 92, 0.35);
+        border-radius: 999px;
+        font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .ghost-button,
+      .primary-button {
+        min-height: 38px;
+        padding: 0 15px;
+        border-radius: 9px;
+        cursor: default;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .ghost-button {
+        color: #f8fff4;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+      }
+
+      .primary-button {
+        color: var(--ink);
+        background: var(--lime);
+        border: 1px solid var(--lime);
+        box-shadow: 0 7px 20px rgba(201, 244, 92, 0.22);
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: 252px minmax(0, 1fr);
+        max-width: 1480px;
+        min-height: calc(100vh - 68px);
+        margin: 0 auto;
+      }
+
+      .sidebar {
+        padding: 28px 22px 48px 28px;
+        border-right: 1px solid var(--line);
+      }
+
+      .sticky {
+        position: sticky;
+        top: 96px;
+      }
+
+      .eyebrow {
+        margin: 0 0 9px;
+        color: var(--muted);
+        font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .steps {
+        display: grid;
+        gap: 6px;
+        margin: 0 0 28px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        color: var(--muted);
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .step span {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .step.active {
+        color: var(--ink);
+        background: var(--card);
+        box-shadow: 0 8px 20px rgba(31, 42, 34, 0.05);
+      }
+
+      .step.active span {
+        color: var(--ink);
+        background: var(--lime);
+        border-color: var(--lime);
+      }
+
+      .target-card {
+        padding: 17px;
+        background: var(--ink);
+        color: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .company {
+        display: flex;
+        gap: 11px;
+        align-items: center;
+        margin: 8px 0 15px;
+      }
+
+      .company-logo {
+        width: 40px;
+        height: 40px;
+        padding: 6px;
+        object-fit: contain;
+        background: white;
+        border-radius: 11px;
+      }
+
+      .company strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .company small {
+        color: #9eaaa1;
+        font-size: 11px;
+      }
+
+      .target-job {
+        margin: 0;
+        color: #e7eee8;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .mini-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 14px;
+      }
+
+      .mini-tags span {
+        padding: 5px 8px;
+        color: #dbe5dc;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        font-size: 10px;
+      }
+
+      .resume-card {
+        margin-top: 12px;
+        padding: 14px;
+        background: rgba(255, 254, 249, 0.7);
+        border: 1px dashed #aeb7ad;
+        border-radius: 13px;
+      }
+
+      .resume-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+      }
+
+      .resume-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .content {
+        min-width: 0;
+        padding: 34px 34px 70px;
+      }
+
+      .intro {
+        display: flex;
+        gap: 24px;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 24px;
+      }
+
+      .intro h1 {
+        max-width: 820px;
+        margin: 0;
+        font-size: clamp(32px, 4vw, 58px);
+        line-height: 1.03;
+        letter-spacing: -0.055em;
+      }
+
+      .intro h1 em {
+        position: relative;
+        z-index: 0;
+        font-style: normal;
+        white-space: nowrap;
+      }
+
+      .intro h1 em::after {
+        position: absolute;
+        z-index: -1;
+        right: -4px;
+        bottom: 4px;
+        left: -4px;
+        height: 14px;
+        background: var(--lime);
+        content: "";
+      }
+
+      .intro-copy {
+        max-width: 520px;
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .intro-actions {
+        display: flex;
+        gap: 9px;
+        flex: 0 0 auto;
+      }
+
+      .intro-actions .ghost-button {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.45);
+        border-color: #cbd1c8;
+      }
+
+      .data-strip {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        margin-bottom: 16px;
+        overflow: hidden;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .metric {
+        padding: 17px 19px;
+        border-right: 1px solid var(--line);
+      }
+
+      .metric:last-child {
+        border: 0;
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 22px;
+        letter-spacing: -0.03em;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .grid-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(310px, 0.85fr);
+        gap: 16px;
+      }
+
+      .card {
+        min-width: 0;
+        padding: 22px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .card.dark {
+        color: white;
+        background: var(--ink);
+        border-color: var(--ink);
+      }
+
+      .card-head {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .card h2,
+      .card h3,
+      .card p {
+        margin-top: 0;
+      }
+
+      .card h2 {
+        margin-bottom: 5px;
+        font-size: 20px;
+        letter-spacing: -0.025em;
+      }
+
+      .card h3 {
+        margin-bottom: 4px;
+        font-size: 15px;
+      }
+
+      .subtle {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .dark .subtle {
+        color: #9da9a0;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 9px;
+        color: var(--teal);
+        background: #e2f4ef;
+        border-radius: 999px;
+        font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: nowrap;
+      }
+
+      .status::before {
+        width: 6px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 50%;
+        content: "";
+      }
+
+      .score-layout {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 25px;
+        align-items: center;
+      }
+
+      .score-ring {
+        display: grid;
+        width: 168px;
+        height: 168px;
+        place-items: center;
+        background: conic-gradient(var(--lime) 0 72%, rgba(255, 255, 255, 0.12) 72% 100%);
+        border-radius: 50%;
+      }
+
+      .score-inner {
+        display: grid;
+        width: 132px;
+        height: 132px;
+        place-content: center;
+        text-align: center;
+        background: var(--ink);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 50%;
+      }
+
+      .score-inner strong {
+        font-size: 48px;
+        line-height: 0.9;
+        letter-spacing: -0.06em;
+      }
+
+      .score-inner span {
+        margin-top: 8px;
+        color: #aab4ac;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+      }
+
+      .verdict {
+        margin: 0 0 16px;
+        color: #f3f7f3;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      .verdict strong {
+        color: var(--lime);
+      }
+
+      .bar-list {
+        display: grid;
+        gap: 11px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 88px 1fr 30px;
+        gap: 9px;
+        align-items: center;
+        color: #cbd3cc;
+        font-size: 11px;
+      }
+
+      .bar {
+        height: 6px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+      }
+
+      .bar i {
+        display: block;
+        width: var(--value);
+        height: 100%;
+        background: var(--lime);
+        border-radius: inherit;
+      }
+
+      .signal-list {
+        display: grid;
+        gap: 13px;
+      }
+
+      .signal {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .signal:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .signal strong {
+        font-size: 13px;
+      }
+
+      .signal p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .signal-score {
+        align-self: start;
+        min-width: 43px;
+        padding: 6px 8px;
+        color: var(--ink);
+        background: #edf0e8;
+        border-radius: 7px;
+        font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        text-align: center;
+      }
+
+      .signal-score.hot {
+        background: var(--lime);
+      }
+
+      .section-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .quote {
+        margin: 0 0 13px;
+        padding: 13px 14px;
+        color: #334038;
+        background: #f2f4ed;
+        border-left: 3px solid var(--teal);
+        border-radius: 0 10px 10px 0;
+        font-size: 12px;
+        line-height: 1.65;
+      }
+
+      .evidence-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        font-size: 10px;
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 12px;
+        align-items: center;
+        margin-top: 14px;
+        padding: 13px;
+        background: #fff7ed;
+        border: 1px solid #f0dac8;
+        border-radius: 13px;
+      }
+
+      .compare img {
+        width: 42px;
+        height: 42px;
+        padding: 6px;
+        object-fit: contain;
+        background: white;
+        border-radius: 10px;
+      }
+
+      .compare strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 12px;
+      }
+
+      .compare span {
+        color: #80624c;
+        font-size: 10px;
+        line-height: 1.4;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 4px;
+      }
+
+      .timeline-item {
+        position: relative;
+        display: grid;
+        grid-template-columns: 80px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 47px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .timeline-item:last-child {
+        border-bottom: 0;
+      }
+
+      .timeline time {
+        color: var(--muted);
+        font: 700 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .timeline strong {
+        font-size: 12px;
+      }
+
+      .round {
+        padding: 5px 7px;
+        color: var(--blue);
+        background: #e9efff;
+        border-radius: 6px;
+        font-size: 9px;
+        font-weight: 750;
+      }
+
+      .plan {
+        display: grid;
+        gap: 9px;
+      }
+
+      .plan-item {
+        display: grid;
+        grid-template-columns: 30px 1fr auto;
+        gap: 11px;
+        align-items: start;
+        padding: 13px;
+        background: #f4f6ef;
+        border: 1px solid transparent;
+        border-radius: 12px;
+      }
+
+      .plan-item.priority {
+        background: #f5ffd9;
+        border-color: #d9ed9f;
+      }
+
+      .check {
+        display: grid;
+        width: 29px;
+        height: 29px;
+        place-items: center;
+        color: var(--muted);
+        background: white;
+        border: 1px solid #cfd5cb;
+        border-radius: 8px;
+        font-size: 12px;
+      }
+
+      .plan-item strong {
+        display: block;
+        margin: 1px 0 4px;
+        font-size: 12px;
+      }
+
+      .plan-item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+
+      .duration {
+        padding: 5px 7px;
+        color: var(--muted);
+        background: white;
+        border-radius: 6px;
+        font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .source-note {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 16px;
+        padding: 16px 19px;
+        color: #d5ded6;
+        background: #263029;
+        border-radius: 14px;
+        font-size: 11px;
+      }
+
+      .source-note strong {
+        color: white;
+      }
+
+      .source-note code {
+        color: var(--lime);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      @media (max-width: 1080px) {
+        .page {
+          grid-template-columns: 210px minmax(0, 1fr);
+        }
+
+        .content {
+          padding: 28px 24px 60px;
+        }
+
+        .data-strip {
+          grid-template-columns: repeat(3, 1fr);
+        }
+
+        .metric:nth-child(3) {
+          border-right: 0;
+        }
+
+        .metric:nth-child(n + 4) {
+          border-top: 1px solid var(--line);
+        }
+
+        .grid-main,
+        .section-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .topbar {
+          padding: 0 16px;
+        }
+
+        .nav,
+        .top-actions .ghost-button,
+        .concept-tag {
+          display: none;
+        }
+
+        .page {
+          display: block;
+        }
+
+        .sidebar {
+          padding: 18px 16px 0;
+          border: 0;
+        }
+
+        .sticky {
+          position: static;
+        }
+
+        .steps {
+          grid-template-columns: repeat(4, 1fr);
+          margin-bottom: 12px;
+        }
+
+        .step {
+          display: block;
+          padding: 8px 4px;
+          text-align: center;
+          font-size: 10px;
+        }
+
+        .step span {
+          margin: 0 auto 6px;
+        }
+
+        .target-card,
+        .resume-card {
+          display: none;
+        }
+
+        .content {
+          padding: 24px 16px 50px;
+        }
+
+        .intro {
+          display: block;
+        }
+
+        .intro-actions {
+          margin-top: 18px;
+        }
+
+        .data-strip {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .metric,
+        .metric:nth-child(3) {
+          border-top: 1px solid var(--line);
+          border-right: 1px solid var(--line);
+        }
+
+        .metric:nth-child(1),
+        .metric:nth-child(2) {
+          border-top: 0;
+        }
+
+        .metric:nth-child(even) {
+          border-right: 0;
+        }
+
+        .score-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .score-ring {
+          margin: 0 auto;
+        }
+
+        .timeline-item {
+          grid-template-columns: 65px 1fr;
+        }
+
+        .timeline .round {
+          display: none;
+        }
+
+        .source-note {
+          display: block;
+          line-height: 1.7;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">OL</div>
+        <span>OfferLens</span>
+        <nav class="nav" aria-label="主导航">
+          <a href="#">面经情报</a>
+          <a href="#">岗位雷达</a>
+          <a class="active" href="#">AI 分析</a>
+        </nav>
+      </div>
+      <div class="top-actions">
+        <span class="concept-tag">Static concept / v1</span>
+        <button class="ghost-button" type="button">保存分析</button>
+        <button class="primary-button" type="button">生成完整报告 →</button>
+      </div>
+    </header>
+
+    <div class="page">
+      <aside class="sidebar">
+        <div class="sticky">
+          <p class="eyebrow">Analysis flow</p>
+          <div class="steps" aria-label="分析步骤">
+            <div class="step"><span>01</span>目标岗位</div>
+            <div class="step active"><span>02</span>情报诊断</div>
+            <div class="step"><span>03</span>个人匹配</div>
+            <div class="step"><span>04</span>行动计划</div>
+          </div>
+
+          <section class="target-card" aria-label="当前目标岗位">
+            <p class="eyebrow" style="color:#91a095">Current target</p>
+            <div class="company">
+              <img class="company-logo" src="/company-logos/腾讯-01.svg" alt="腾讯" />
+              <div>
+                <strong>腾讯</strong>
+                <small>2026 校招 · 技术族</small>
+              </div>
+            </div>
+            <p class="target-job">软件开发－后台开发方向</p>
+            <div class="mini-tags">
+              <span>后端开发</span><span>深圳 / 北京</span><span>应届毕业生</span>
+            </div>
+          </section>
+
+          <section class="resume-card">
+            <strong>＋ 添加简历，解锁个人匹配度</strong>
+            <p>支持 PDF。系统会把项目证据与岗位要求逐条对齐。</p>
+          </section>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="intro">
+          <div>
+            <p class="eyebrow">Career intelligence workspace</p>
+            <h1>把“我适不适合”<br />变成<em>有证据的判断</em></h1>
+            <p class="intro-copy">从真实岗位要求、近期面经和个人经历出发，先给结论，再告诉你该补什么、先做什么。</p>
+          </div>
+          <div class="intro-actions">
+            <button class="ghost-button" type="button">更换目标</button>
+            <button class="primary-button" type="button">上传简历继续 →</button>
+          </div>
+        </section>
+
+        <section class="data-strip" aria-label="分析数据概览">
+          <div class="metric"><strong>875</strong><span>有效真实面经</span></div>
+          <div class="metric"><strong>347</strong><span>后端方向面经</span></div>
+          <div class="metric"><strong>6</strong><span>腾讯校招岗位样本</span></div>
+          <div class="metric"><strong>6</strong><span>近期关联面经</span></div>
+          <div class="metric"><strong>8</strong><span>官方招聘来源</span></div>
+        </section>
+
+        <section class="grid-main">
+          <article class="card dark">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow" style="color:#9ba79e">Readiness index</p>
+                <h2>后端岗位准备指数</h2>
+                <p class="subtle">基于岗位和面经信号的示例诊断；上传简历后生成个人得分。</p>
+              </div>
+              <span class="status" style="color:var(--lime);background:rgba(201,244,92,.12)">证据充足</span>
+            </div>
+            <div class="score-layout">
+              <div class="score-ring">
+                <div class="score-inner"><strong>72</strong><span>MARKET READINESS</span></div>
+              </div>
+              <div>
+                <p class="verdict"><strong>结论：</strong>基础能力要求清晰，但“分布式系统实践”和“项目结果证据”会拉开候选人差距。</p>
+                <div class="bar-list">
+                  <div class="bar-row"><span>计算机基础</span><div class="bar"><i style="--value:86%"></i></div><b>86</b></div>
+                  <div class="bar-row"><span>工程开发</span><div class="bar"><i style="--value:78%"></i></div><b>78</b></div>
+                  <div class="bar-row"><span>系统设计</span><div class="bar"><i style="--value:64%"></i></div><b>64</b></div>
+                  <div class="bar-row"><span>AI 工程</span><div class="bar"><i style="--value:42%"></i></div><b>42</b></div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Signal map</p>
+                <h2>岗位在反复强调什么</h2>
+                <p class="subtle">从当前腾讯校招后端岗位样本中抽取。</p>
+              </div>
+              <span class="status">6 JOBS</span>
+            </div>
+            <div class="signal-list">
+              <div class="signal"><div><strong>Java / Go / C++ 编程能力</strong><p>几乎所有岗位都要求至少精通一门主流语言。</p></div><span class="signal-score hot">6/6</span></div>
+              <div class="signal"><div><strong>数据结构、系统与网络基础</strong><p>算法、操作系统、网络协议是稳定门槛。</p></div><span class="signal-score hot">5/6</span></div>
+              <div class="signal"><div><strong>数据库与数据存储</strong><p>MySQL、NoSQL、数据建模与调优能力。</p></div><span class="signal-score">3/6</span></div>
+              <div class="signal"><div><strong>分布式与高性能计算</strong><p>高并发、容器、通信与大规模系统逐渐前置。</p></div><span class="signal-score">3/6</span></div>
+              <div class="signal"><div><strong>AI / LLM 工程意识</strong><p>已出现在支付、计算框架和中台岗位中。</p></div><span class="signal-score">2/6</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="section-grid">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Why this conclusion</p>
+                <h2>岗位证据，不只给摘要</h2>
+                <p class="subtle">结论可以回到原始职责与要求，避免“AI 凭感觉”。</p>
+              </div>
+              <span class="status">官方岗位</span>
+            </div>
+            <blockquote class="quote">“熟练掌握 C/C++/Java/Go 等其中一门开发语言；掌握算法、操作系统、设计模式、数据库系统与网络安全等专业知识。”</blockquote>
+            <blockquote class="quote">“持续优化架构，提升关键服务和基础设施的稳定性与可用性；对线上问题快速定位并解决。”</blockquote>
+            <div class="evidence-meta"><span>腾讯 · 软件开发－后台开发方向</span><span>深圳 / 北京 / 上海</span></div>
+            <div class="compare">
+              <img src="/company-logos/字节跳动.svg" alt="字节跳动" />
+              <div><strong>跨公司信号：字节更强调数据库与业务中台</strong><span>当前样本突出 MySQL / Redis、系统调优、高并发与 AI 中台提效。</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Recent interviews</p>
+                <h2>最近大家真的在面什么</h2>
+                <p class="subtle">按目标公司与后端方向匹配近期面经。</p>
+              </div>
+              <span class="status">6 MATCHED</span>
+            </div>
+            <div class="timeline">
+              <div class="timeline-item"><time>07.06</time><strong>腾讯音乐二面</strong><span class="round">二面</span></div>
+              <div class="timeline-item"><time>07.05</time><strong>腾讯天美一面</strong><span class="round">一面</span></div>
+              <div class="timeline-item"><time>07.02</time><strong>腾讯 TEG 云架构平台部后台开发</strong><span class="round">后台</span></div>
+              <div class="timeline-item"><time>07.02</time><strong>腾讯云日常实习后台开发一面</strong><span class="round">一面</span></div>
+              <div class="timeline-item"><time>07.01</time><strong>腾讯音乐后台开发一面</strong><span class="round">一面</span></div>
+              <div class="timeline-item"><time>06.30</time><strong>WXG 二面复盘</strong><span class="round">二面</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="section-grid">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Personal evidence</p>
+                <h2>让简历证明你会，而不是写你会</h2>
+                <p class="subtle">上传简历后，每条岗位要求都会匹配项目证据。</p>
+              </div>
+              <span class="status" style="color:#8a5b24;background:#fff0d8">待上传</span>
+            </div>
+            <div class="signal-list">
+              <div class="signal"><div><strong>高并发 / 稳定性</strong><p>需要项目中的 QPS、延迟、可用性或故障恢复结果。</p></div><span class="signal-score">缺证据</span></div>
+              <div class="signal"><div><strong>数据库优化</strong><p>建议补充索引、慢查询、缓存一致性等具体动作。</p></div><span class="signal-score">待判断</span></div>
+              <div class="signal"><div><strong>复杂问题定位</strong><p>用一次线上问题复盘展示定位路径与结果。</p></div><span class="signal-score">待判断</span></div>
+            </div>
+            <button class="primary-button" style="width:100%;margin-top:18px" type="button">上传 PDF 简历，开始逐条匹配</button>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Next best actions</p>
+                <h2>现在最值得做的 3 件事</h2>
+                <p class="subtle">从“信息很多”收敛成一周可执行计划。</p>
+              </div>
+              <span class="status">7 DAYS</span>
+            </div>
+            <div class="plan">
+              <div class="plan-item priority"><span class="check">01</span><div><strong>补齐 Java / Go 与计算机基础问答</strong><p>围绕线程、网络、数据库和常见数据结构做 20 题口述复盘。</p></div><span class="duration">2 DAYS</span></div>
+              <div class="plan-item"><span class="check">02</span><div><strong>准备一个“系统稳定性”项目故事</strong><p>按问题、指标、方案、权衡、结果组织成 3 分钟回答。</p></div><span class="duration">2 DAYS</span></div>
+              <div class="plan-item"><span class="check">03</span><div><strong>补一个 AI × 后端的小型实践</strong><p>重点不是模型训练，而是接口、数据链路、评估和可观测性。</p></div><span class="duration">3 DAYS</span></div>
+            </div>
+          </article>
+        </section>
+
+        <footer class="source-note">
+          <span><strong>数据说明：</strong>页面使用当前本地库中的真实统计和岗位/面经样本；准备指数为静态概念稿示例。</span>
+          <span>岗位批次 <code>jobs-20260620163700</code> · 面经更新至 2026-07-06</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

@@ -5,64 +5,34 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useNavigate } from 'react-router-dom'
 import { logApi } from '@/api'
-import type { FilterOptions, NiukeRecord } from '@/api/types'
+import type { NiukeRecord } from '@/api/types'
+import { useFilterOptions } from '@/hooks/useFilterOptions'
+import { useRecords } from '@/hooks/useRecords'
+import { useErrorMessage } from '@/hooks/useErrorMessage'
 import { buildRecordMarkdown, getNowcoderUrl } from '@/utils/markdown'
 
 const { Paragraph, Text } = Typography
 
 const Data: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<NiukeRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<NiukeRecord | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [postFilter, setPostFilter] = useState('')
   const [companyFilter, setCompanyFilter] = useState('')
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ posts: [], companies: [] })
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
+
+  const errMsg = useErrorMessage()
+  const { postOptions, companyOptions } = useFilterOptions()
+  const { records, loading, pagination, reload: fetchRecords } = useRecords(postFilter, companyFilter, {
+    paged: true,
+    pageSize: 20,
+    errorMessage: '获取面经数据失败',
+  })
 
   const selectedMarkdown = useMemo(
     () => (selectedRecord ? buildRecordMarkdown(selectedRecord) : ''),
     [selectedRecord],
   )
-
-  const postOptions = useMemo(
-    () => [{ label: '全部方向', value: '' }, ...filterOptions.posts.map((post) => ({ label: post, value: post }))],
-    [filterOptions.posts],
-  )
-
-  const companyOptions = useMemo(
-    () => [
-      { label: '全部公司', value: '' },
-      ...filterOptions.companies.map((company) => ({ label: company, value: company })),
-    ],
-    [filterOptions.companies],
-  )
-
-  const fetchRecords = async (page = 1, pageSize = pagination.pageSize) => {
-    try {
-      setLoading(true)
-      const offset = (page - 1) * pageSize
-      const data = await logApi.records({
-        post: postFilter || undefined,
-        company: companyFilter || undefined,
-        limit: pageSize,
-        offset,
-      })
-      setRecords(data?.data || [])
-      setPagination((prev) => ({
-        ...prev,
-        current: page,
-        pageSize,
-        total: data?.total || 0,
-      }))
-    } catch (e: unknown) {
-      message.error((e as Error).message || '获取面经数据失败')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const openDetail = async (record: NiukeRecord) => {
     setDrawerOpen(true)
@@ -72,22 +42,15 @@ const Data: React.FC = () => {
       const detail = await logApi.record(record.id)
       setSelectedRecord(detail)
     } catch (e: unknown) {
-      message.error((e as Error).message || '获取详情失败')
+      errMsg(e, '获取详情失败')
     } finally {
       setDetailLoading(false)
     }
   }
 
   useEffect(() => {
-    logApi
-      .filters()
-      .then((data) => setFilterOptions(data || { posts: [], companies: [] }))
-      .catch(() => message.warning('筛选项加载失败，可继续查看已有数据'))
-  }, [])
-
-  useEffect(() => {
     fetchRecords(1)
-  }, [])
+  }, [fetchRecords])
 
   const columns = [
     {

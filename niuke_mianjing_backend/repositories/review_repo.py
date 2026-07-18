@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -12,12 +13,17 @@ class ReviewRepository(BaseRepository):
             CREATE TABLE IF NOT EXISTS `app_users` (
                 `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
                 `visitor_key` VARCHAR(128) NOT NULL,
+                `email` VARCHAR(255) NULL,
+                `password_hash` VARCHAR(255) NULL,
+                `display_name` VARCHAR(64) NULL,
                 `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY `uk_app_users_visitor_key` (`visitor_key`)
+                UNIQUE KEY `uk_app_users_visitor_key` (`visitor_key`),
+                UNIQUE KEY `uk_app_users_email` (`email`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """
         )
+        await self._upgrade_account_columns()
         await self._execute(
             """
             CREATE TABLE IF NOT EXISTS `review_progress` (
@@ -50,6 +56,24 @@ class ReviewRepository(BaseRepository):
             """
         )
         await self._upgrade_progress_user_scope()
+
+    async def _upgrade_account_columns(self):
+        for name, definition in (
+            ("email", "VARCHAR(255) NULL"),
+            ("password_hash", "VARCHAR(255) NULL"),
+            ("display_name", "VARCHAR(64) NULL"),
+        ):
+            row = await self._fetch_one(
+                "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'app_users' AND column_name = %s",
+                (name,),
+            )
+            if not row or row[0] == 0:
+                await self._execute(f"ALTER TABLE app_users ADD COLUMN {name} {definition}")
+        index = await self._fetch_one(
+            "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'app_users' AND index_name = 'uk_app_users_email'"
+        )
+        if not index or index[0] == 0:
+            await self._execute("ALTER TABLE app_users ADD UNIQUE KEY uk_app_users_email (email)")
 
     async def _upgrade_progress_user_scope(self):
         column = await self._fetch_one(
@@ -102,6 +126,38 @@ class ReviewRepository(BaseRepository):
         )
         row = await self._fetch_one("SELECT id FROM app_users WHERE visitor_key = %s", (safe_key,))
         return int(row[0])
+
+    async def create_account(self, email: str, password_hash: str, display_name: str) -> Dict[str, Any]:
+        visitor_key = f"account:{hashlib.sha256(email.encode('utf-8')).hexdigest()}"
+        await self._execute(
+            "INSERT INTO app_users (visitor_key, email, password_hash, display_name) VALUES (%s, %s, %s, %s)",
+            (visitor_key, email, password_hash, display_name),
+        )
+        account = await self.get_account_by_email(email)
+        if not account:
+            raise RuntimeError("账户创建失败")
+        return account
+
+    async def get_account_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        row = await self._fetch_one(
+            "SELECT id, email, password_hash, display_name FROM app_users WHERE email = %s",
+            (email,),
+        )
+        return {"id": int(row[0]), "email": row[1], "password_hash": row[2], "display_name": row[3]} if row else None
+
+    async def get_account_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        row = await self._fetch_one(
+            "SELECT id, email, password_hash, display_name FROM app_users WHERE id = %s AND email IS NOT NULL",
+            (user_id,),
+        )
+        return {"id": int(row[0]), "email": row[1], "password_hash": row[2], "display_name": row[3]} if row else None
+
+    async def set_account_display_name(self, user_id: int, display_name: str) -> Dict[str, Any]:
+        await self._execute("UPDATE app_users SET display_name = %s WHERE id = %s", (display_name, user_id))
+        account = await self.get_account_by_id(user_id)
+        if not account:
+            raise RuntimeError("账户不存在")
+        return account
 
     async def get_progress_map(self, user_id: int, record_ids: List[int]) -> Dict[int, Dict[str, Any]]:
         if not record_ids:

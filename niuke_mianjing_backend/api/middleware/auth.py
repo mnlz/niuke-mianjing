@@ -14,6 +14,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/openapi.json",
         "/redoc",
         "/api/auth/login",
+        "/api/user-auth/register",
+        "/api/user-auth/login",
+        "/api/user-auth/me",
         "/api/logs/stats",
         "/api/logs/filters",
         "/api/logs/data",
@@ -21,11 +24,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/api/review/overview",
         "/api/recruitment/sources",
         "/api/recruitment/tracks",
+        "/api/recruitment/recruitment-types",
         "/api/recruitment/jobs",
+        "/api/recruitment/job-interviews",
+        "/api/recruitment/track-interviews",
+        "/api/recruitment/ai-models",
+        "/api/recruitment/resume/parse",
+        "/api/recruitment/ai-report",
+        "/api/recruitment/ai-reports",
     }
     PUBLIC_PREFIXES = (
         "/api/logs/data/",
         "/api/review/progress/",
+        "/api/recruitment/ai-reports/",
     )
 
     async def dispatch(self, request: Request, call_next):

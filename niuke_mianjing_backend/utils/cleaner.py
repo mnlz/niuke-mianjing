@@ -1,5 +1,9 @@
 from mysql.connector import Error
 
+from niuke_mianjing_backend.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def clean_duplicate_and_empty_data(connection):
     cursor = connection.cursor()
@@ -16,7 +20,7 @@ def clean_duplicate_and_empty_data(connection):
         """
         cursor.execute(duplicate_sql)
         duplicates_removed = cursor.rowcount
-        
+
         empty_sql = """
         DELETE FROM `niuke`
         WHERE title IS NULL OR title = ''
@@ -24,17 +28,15 @@ def clean_duplicate_and_empty_data(connection):
         """
         cursor.execute(empty_sql)
         empty_removed = cursor.rowcount
-        
+
         connection.commit()
-        
-        print(f"数据清理完成:")
-        print(f"- 删除了 {duplicates_removed} 条重复数据")
-        print(f"- 删除了 {empty_removed} 条空数据")
-        
+
+        logger.info("数据清理完成: 删除重复 %d 条, 删除空数据 %d 条", duplicates_removed, empty_removed)
+
         return duplicates_removed, empty_removed
-        
+
     except Error as e:
-        print(f"清理数据时发生错误: {e}")
+        logger.exception("清理数据失败")
         connection.rollback()
         return 0, 0
     finally:

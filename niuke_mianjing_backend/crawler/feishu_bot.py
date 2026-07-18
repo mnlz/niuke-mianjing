@@ -2,6 +2,10 @@ import requests
 import json
 from datetime import datetime
 
+from niuke_mianjing_backend.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class FeishuBot:
     def __init__(self, webhook_url: str = None):
@@ -53,10 +57,10 @@ class FeishuBot:
             if result.get("StatusCode") == 0 or result.get("code") == 0:
                 return True
             else:
-                print(f"飞书发送失败: {result}")
+                logger.warning("飞书发送失败: %s", result)
                 return False
         except Exception as e:
-            print(f"飞书发送异常: {e}")
+            logger.exception("飞书发送异常")
             return False
 
     def send_crawl_summary(self, post: str, new_records: int, 

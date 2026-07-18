@@ -8,6 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="验证大厂招聘官网适配器")
     parser.add_argument("source", choices=list_adapters())
     parser.add_argument("--keyword", default="")
+    parser.add_argument("--recruitment-type", choices=["campus", "intern", "social"], default="campus")
     parser.add_argument("--pages", type=int, default=1)
     parser.add_argument("--page-size", type=int, default=5)
     parser.add_argument("--no-detail", action="store_true", help="腾讯适配器不请求职位详情")
@@ -19,6 +20,7 @@ def main():
         keyword=args.keyword,
         max_pages=args.pages,
         page_size=args.page_size,
+        recruitment_type=args.recruitment_type,
         include_detail=not args.no_detail,
     )
     payload = [job.model_dump(mode="json") for job in jobs]

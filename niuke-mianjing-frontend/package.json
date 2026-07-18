@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node scripts/interviewUtils.test.mjs && node scripts/publicHome.test.mjs && node scripts/publicJobs.test.mjs && node scripts/markdown.test.mjs && node scripts/aiAnalysis.test.mjs && node scripts/userAuth.test.mjs && node scripts/staticAiPages.test.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

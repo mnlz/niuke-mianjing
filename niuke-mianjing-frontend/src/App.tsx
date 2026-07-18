@@ -4,19 +4,27 @@ import { ConfigProvider, Spin } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import AppLayout from '@/components/Layout'
 import Dashboard from '@/pages/Dashboard'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import { authApi } from '@/api'
 import { ADMIN_TOKEN_CHANGED_EVENT, clearAdminToken, getAdminToken } from '@/utils/auth'
 
 const PublicHome = lazy(() => import('@/pages/PublicHome'))
 const PublicInterviews = lazy(() => import('@/pages/PublicInterviews'))
 const PublicJobs = lazy(() => import('@/pages/PublicJobs'))
+const AIAnalysis = lazy(() => import('@/pages/AIAnalysis'))
+const AIAnalysisCreate = lazy(() => import('@/pages/AIAnalysis/CreatePage'))
+const AIAnalysisReports = lazy(() => import('@/pages/AIAnalysis/ReportsPage'))
+const AIAnalysisSample = lazy(() => import('@/pages/AIAnalysis/SampleReportPage'))
 const Schedule = lazy(() => import('@/pages/Schedule'))
 const Logs = lazy(() => import('@/pages/Logs'))
 const Data = lazy(() => import('@/pages/Data'))
+const RecruitmentJobs = lazy(() => import('@/pages/RecruitmentJobs'))
+const AIModels = lazy(() => import('@/pages/AIModels'))
 const QuickCrawl = lazy(() => import('@/pages/QuickCrawl'))
 const Cards = lazy(() => import('@/pages/Cards'))
 const Wechat = lazy(() => import('@/pages/Wechat'))
 const AdminLogin = lazy(() => import('@/pages/AdminLogin'))
+const UserLogin = lazy(() => import('@/pages/UserLogin'))
 
 const Loading: React.FC = () => (
   <div className="page-loading">
@@ -67,6 +75,8 @@ const AdminRoutes: React.FC = () => {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/data" element={<Data />} />
+          <Route path="/recruitment-jobs" element={<RecruitmentJobs />} />
+          <Route path="/ai-models" element={<AIModels />} />
           <Route path="/cards" element={<Cards />} />
           <Route path="/wechat" element={<Wechat />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
@@ -113,43 +123,85 @@ const App: React.FC = () => (
       },
     }}
   >
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Suspense fallback={<Loading />}>
-              <PublicHome />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/interviews"
-          element={
-            <Suspense fallback={<Loading />}>
-              <PublicInterviews />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/jobs"
-          element={
-            <Suspense fallback={<Loading />}>
-              <PublicJobs />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/admin-login"
-          element={
-            <Suspense fallback={<Loading />}>
-              <AdminLogin />
-            </Suspense>
-          }
-        />
-        <Route path="/*" element={<AdminRoutes />} />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Suspense fallback={<Loading />}>
+                <PublicHome />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/interviews"
+            element={
+              <Suspense fallback={<Loading />}>
+                <PublicInterviews />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <Suspense fallback={<Loading />}>
+                <PublicJobs />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/ai-analysis"
+            element={
+              <Suspense fallback={<Loading />}>
+                <AIAnalysis />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/ai-analysis/create"
+            element={
+              <Suspense fallback={<Loading />}>
+                <AIAnalysisCreate />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/ai-analysis/sample-report"
+            element={
+              <Suspense fallback={<Loading />}>
+                <AIAnalysisSample />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/ai-analysis/reports"
+            element={
+              <Suspense fallback={<Loading />}>
+                <AIAnalysisReports />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<Loading />}>
+                <UserLogin />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/admin-login"
+            element={
+              <Suspense fallback={<Loading />}>
+                <AdminLogin />
+              </Suspense>
+            }
+          />
+          <Route path="/*" element={<AdminRoutes />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   </ConfigProvider>
 )
 

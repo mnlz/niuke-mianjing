@@ -4,11 +4,10 @@ from collections import Counter
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-import requests
-
 from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.review_repo import ReviewRepository
+from niuke_mianjing_backend.services.openai_client import extract_chat_completion_text, post_chat_completion
 
 
 class ReviewService:
@@ -19,14 +18,13 @@ class ReviewService:
     async def init_tables(self):
         await self.review_repo.init_tables()
 
-    async def get_progress(self, visitor_key: str, record_ids: List[int]) -> List[Dict[str, Any]]:
-        user_id = await self.review_repo.get_or_create_user(visitor_key)
+    async def get_progress(self, user_id: int, record_ids: List[int]) -> List[Dict[str, Any]]:
         progress_map = await self.review_repo.get_progress_map(user_id, record_ids)
         return [progress_map.get(record_id, ReviewRepository.default_progress(record_id)) for record_id in record_ids]
 
     async def update_progress(
         self,
-        visitor_key: str,
+        user_id: int,
         record_id: int,
         favorite: Optional[bool] = None,
         mastery: Optional[str] = None,
@@ -34,7 +32,6 @@ class ReviewService:
     ) -> Dict[str, Any]:
         if mastery and mastery not in {"new", "learning", "fuzzy", "mastered"}:
             raise ValueError("掌握状态不合法")
-        user_id = await self.review_repo.get_or_create_user(visitor_key)
         return await self.review_repo.upsert_progress(user_id, record_id, favorite, mastery, note)
 
     async def build_overview(
@@ -112,29 +109,17 @@ class ReviewService:
         return {**saved, "cached": False}
 
     def _generate_ai_review(self, prompt: str) -> Dict[str, Any]:
-        if not settings.OPENAI_API_KEY:
-            raise ValueError("请先在 .env 配置 OPENAI_API_KEY")
-
-        response = requests.post(
-            self._chat_completions_url(),
-            headers={
-                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                "Content-Type": "application/json; charset=utf-8",
-            },
-            json={
-                "model": settings.OPENAI_TEXT_MODEL,
-                "messages": [
-                    {"role": "system", "content": "你是资深技术面试教练，输出必须是严格 JSON，不要包裹 Markdown。"},
-                    {"role": "user", "content": prompt},
-                ],
-                "temperature": 0.55,
-            },
+        response = post_chat_completion(
+            [
+                {"role": "system", "content": "你是资深技术面试教练，输出必须是严格 JSON，不要包裹 Markdown。"},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.55,
             timeout=90,
         )
         if response.status_code >= 400:
             raise ValueError(f"AI 复盘生成失败：{response.text[:500]}")
-        data = response.json()
-        text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        text = extract_chat_completion_text(response.json())
         try:
             result = json.loads(text)
         except json.JSONDecodeError:
@@ -143,15 +128,6 @@ class ReviewService:
                 raise ValueError("AI 返回内容不是合法 JSON")
             result = json.loads(match.group(0))
         return self._normalize_ai_review(result)
-
-    @staticmethod
-    def _chat_completions_url() -> str:
-        if settings.OPENAI_CHAT_COMPLETIONS_URL:
-            return settings.OPENAI_CHAT_COMPLETIONS_URL
-        base_url = settings.OPENAI_BASE_URL.rstrip("/")
-        if base_url.endswith("/chat/completions"):
-            return base_url
-        return f"{base_url}/chat/completions"
 
     @staticmethod
     def _build_ai_review_prompt(record: Dict[str, Any]) -> str:

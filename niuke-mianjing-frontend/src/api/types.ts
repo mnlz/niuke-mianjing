@@ -45,6 +45,10 @@ export interface NiukeRecord {
   title: string
   company: string
   post: string
+  role_group: string
+  role_family: string
+  role_group_name: string
+  role_family_name: string
   content: string
   edit_time: string | null
   read: number | null
@@ -114,6 +118,17 @@ export interface ExportMdRequest {
 export interface FilterOptions {
   posts: string[]
   companies: string[]
+  role_groups?: RoleGroupFacet[]
+}
+
+export interface RoleFamilyFacet {
+  id: string
+  name: string
+  count: number
+}
+
+export interface RoleGroupFacet extends RoleFamilyFacet {
+  role_families: RoleFamilyFacet[]
 }
 
 export type ReviewMastery = 'new' | 'learning' | 'fuzzy' | 'mastered'
@@ -185,7 +200,11 @@ export interface RecruitmentSource {
   source: string
   company: string
   description: string
+  logo?: string
+  supported_recruitment_types?: RecruitmentType[]
 }
+
+export type RecruitmentType = 'campus' | 'intern' | 'social'
 
 export interface RecruitmentTrack {
   id: string
@@ -201,10 +220,32 @@ export interface RecruitmentJob {
   title: string
   category?: string | null
   job_family?: string | null
+  official_taxonomy?: {
+    level1?: { code?: string | null; name?: string | null; path?: string | null } | null
+    level2?: { code?: string | null; name?: string | null; path?: string | null } | null
+    level3?: { code?: string | null; name?: string | null; path?: string | null } | null
+    tags?: Array<{ code?: string | null; name: string }>
+  }
+  role_group?: string | null
+  role_family?: string | null
+  specialties?: string[]
+  business_domains?: string[]
+  tech_stack?: string[]
+  classification_meta?: {
+    version?: string
+    confidence?: number
+    source_field_paths?: string[]
+    matched_rules?: string[]
+    fallback?: boolean
+  }
+  inferred_track?: string | null
+  inferred_track_name?: string | null
+  display_category?: string | null
   location?: string | null
   country?: string | null
   business_unit?: string | null
   product?: string | null
+  recruitment_type?: RecruitmentType
   employment_type?: string | null
   experience?: string | null
   description: string
@@ -220,13 +261,118 @@ export interface RecruitmentJobPage {
   source: string
   company: string
   track?: string | null
+  role_group?: string | null
+  role_family?: string | null
+  recruitment_type?: RecruitmentType
   keywords?: string[]
+  facet_total?: number
+  role_families?: Array<{ id: string; name: string; count: number }>
+  role_groups?: RoleGroupFacet[]
   items: RecruitmentJob[]
   page: number
   page_size: number
   total: number
   has_more: boolean
   cached: boolean
+}
+
+export interface RecruitmentVersion {
+  source: string
+  recruitment_type: RecruitmentType
+  refresh_version?: string | null
+  job_count: number
+  refresh_started_at?: string | null
+  synced_at?: string | null
+}
+
+export interface RecruitmentRefreshResult {
+  refresh_version: string
+  started_at: string
+  total_jobs: number
+  results: Array<{
+    source: string
+    recruitment_type: RecruitmentType
+    status: 'success' | 'failed'
+    job_count: number
+    error?: string
+  }>
+}
+
+export interface RecruitmentInterview {
+  id: number
+  content_id?: string | null
+  title: string
+  edit_time?: string | null
+  read?: number | null
+  post?: string | null
+  company: string
+  status: number
+}
+
+export interface ParsedResumeSection {
+  key: string
+  title: string
+  content: string
+}
+
+export interface ParsedResume {
+  text: string
+  name: string
+  phone: string
+  email: string
+  page_count: number
+  char_count: number
+  sections: ParsedResumeSection[]
+}
+
+export interface AIModelPublic {
+  id: number
+  model: string
+  channel_name: string
+  description: string
+  is_default: boolean
+}
+
+export interface AIModelAdmin extends AIModelPublic {
+  endpoint: string
+  enabled: boolean
+  source: 'env' | 'legacy' | 'database'
+  api_key_masked: string
+}
+
+export interface AIModelInput {
+  model: string
+  channel_name: string
+  endpoint: string
+  api_key?: string
+  description?: string
+  enabled?: boolean
+  is_default?: boolean
+}
+
+export interface AIModelTestResult {
+  model_id: number
+  success: boolean
+  elapsed_ms: number
+}
+
+export interface RecruitmentAIReportRecord {
+  report_code: string
+  title: string
+  report_type: 'job' | 'company_compare' | 'job_interviews' | 'resume_job' | 'full' | 'resume_match'
+  company: string
+  track: string
+  track_name: string
+  recruitment_type: RecruitmentType
+  content: string
+  model: string
+  model_id?: number | null
+  created_at: string
+  updated_at?: string | null
+}
+
+export interface RecruitmentAIReportResult extends RecruitmentAIReportRecord {
+  report: string
 }
 
 export type CardTheme = 'xiaohongshu' | 'bytedance' | 'alibaba' | 'minimal' | 'business'

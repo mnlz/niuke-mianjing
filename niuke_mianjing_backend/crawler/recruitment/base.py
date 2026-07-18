@@ -39,6 +39,7 @@ class RecruitmentAdapter(ABC):
         page_size: Optional[int] = None,
         keyword: str = "",
         filters: Optional[Dict] = None,
+        recruitment_type: str = "campus",
         include_detail: bool = True,
     ) -> JobPage:
         raise NotImplementedError
@@ -49,6 +50,7 @@ class RecruitmentAdapter(ABC):
         filters: Optional[Dict] = None,
         max_pages: Optional[int] = None,
         page_size: Optional[int] = None,
+        recruitment_type: str = "campus",
         include_detail: bool = True,
     ) -> Iterator[JobPosting]:
         current_page = 1
@@ -58,6 +60,7 @@ class RecruitmentAdapter(ABC):
                 page_size=page_size,
                 keyword=keyword,
                 filters=filters,
+                recruitment_type=recruitment_type,
                 include_detail=include_detail,
             )
             yield from result.items
@@ -73,9 +76,10 @@ class RecruitmentAdapter(ABC):
         filters: Optional[Dict] = None,
         max_pages: Optional[int] = None,
         page_size: Optional[int] = None,
+        recruitment_type: str = "campus",
         include_detail: bool = True,
     ):
-        return list(self.iter_jobs(keyword, filters, max_pages, page_size, include_detail))
+        return list(self.iter_jobs(keyword, filters, max_pages, page_size, recruitment_type, include_detail))
 
     def _page_size(self, page_size: Optional[int]) -> int:
         return min(max(int(page_size or self.default_page_size), 1), self.max_page_size)

@@ -15,6 +15,9 @@ from niuke_mianjing_backend.schemas.ws import WSMessageType
 from niuke_mianjing_backend.services.event_bus import EventBus
 from niuke_mianjing_backend.utils.extractor import extract_company_post
 from niuke_mianjing_backend.utils.job_map import get_job_id
+from niuke_mianjing_backend.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 HEADERS = {
@@ -94,7 +97,7 @@ class CrawlService:
             else:
                 content = self._get_long_content(content_id)
 
-            company = extract_company_post(title)
+            company = extract_company_post(title, content)
             end_ts = source.get("editTime")
             end_time = (
                 datetime.fromtimestamp(end_ts / 1000.0).strftime("%Y-%m-%d %H:%M:%S")
@@ -121,7 +124,7 @@ class CrawlService:
 
     async def crawl_post(self, post: str, max_pages: int = 15) -> Dict:
         start_time = datetime.now()
-        print(f"\n===== 开始抓取【{post}】面经 =====")
+        logger.info("开始抓取【%s】面经", post)
 
         await self.event_bus.publish(
             WSMessageType.CRAWL_START,
@@ -132,7 +135,7 @@ class CrawlService:
         job_id = get_job_id(post)
         if not job_id:
             msg = f"未找到 {post} 对应的 jobId，请检查方向名称"
-            print(msg)
+            logger.warning(msg)
             await self.event_bus.publish(WSMessageType.CRAWL_ERROR, {"post": post, "error": msg}, msg)
             return {"new": 0, "updated": 0, "status": "failed", "error": msg}
 
@@ -157,7 +160,7 @@ class CrawlService:
                 updated_count = result["updated"]
                 total_new += new_count
                 total_updated += updated_count
-                print(f"第 {i} 页保存完成，共 {len(data)} 条记录（新增 {new_count}，更新 {updated_count}）")
+                logger.info("第 %d 页保存完成，共 %d 条记录（新增 %d，更新 %d）", i, len(data), new_count, updated_count)
 
                 await self.event_bus.publish(
                     WSMessageType.CRAWL_PAGE_DONE,
@@ -178,7 +181,7 @@ class CrawlService:
             end_time = datetime.now()
             await self.log_repo.add_log(post, start_time, end_time, max_pages, total_new, total_updated, "success")
 
-            print(f"【{post}】方向抓取完成：新增 {total_new} 条，更新 {total_updated} 条")
+            logger.info("【%s】方向抓取完成：新增 %d 条，更新 %d 条", post, total_new, total_updated)
 
             if self.feishu_bot:
                 self.feishu_bot.send_crawl_summary(post, total_new, total_updated, "success")
@@ -194,7 +197,7 @@ class CrawlService:
         except Exception as e:
             end_time = datetime.now()
             error_msg = str(e)
-            print(f"【{post}】方向抓取失败：{error_msg}")
+            logger.error("【%s】方向抓取失败：%s", post, error_msg, exc_info=True)
 
             await self.log_repo.add_log(post, start_time, end_time, 0, 0, 0, "failed", error_msg)
 
@@ -217,7 +220,7 @@ class CrawlService:
             result = await self.crawl_post(post, max_pages)
             summary.append({"post": post, "new": result["new"], "updated": result["updated"]})
 
-        print("\n开始清理重复和空数据...")
+        logger.info("开始清理重复和空数据...")
         await self.niuke_repo.clean_duplicates_and_empty()
 
         if self.feishu_bot:

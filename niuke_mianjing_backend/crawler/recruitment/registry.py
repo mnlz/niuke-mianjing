@@ -2,12 +2,40 @@ from typing import Dict, Type
 
 from .base import RecruitmentAdapter
 from .bytedance import ByteDanceRecruitmentAdapter
+from .official_pages import (
+    AlibabaRecruitmentAdapter,
+    BaiduRecruitmentAdapter,
+    DeepSeekRecruitmentAdapter,
+    HuaweiRecruitmentAdapter,
+    JDRecruitmentAdapter,
+    KimiRecruitmentAdapter,
+    KuaishouRecruitmentAdapter,
+    MeituanRecruitmentAdapter,
+    MiniMaxRecruitmentAdapter,
+    PDDRecruitmentAdapter,
+    XiaomiRecruitmentAdapter,
+    XiaohongshuRecruitmentAdapter,
+    ZhipuRecruitmentAdapter,
+)
 from .tencent import TencentRecruitmentAdapter
 
 
 ADAPTERS: Dict[str, Type[RecruitmentAdapter]] = {
+    AlibabaRecruitmentAdapter.source: AlibabaRecruitmentAdapter,
+    BaiduRecruitmentAdapter.source: BaiduRecruitmentAdapter,
     ByteDanceRecruitmentAdapter.source: ByteDanceRecruitmentAdapter,
+    DeepSeekRecruitmentAdapter.source: DeepSeekRecruitmentAdapter,
+    HuaweiRecruitmentAdapter.source: HuaweiRecruitmentAdapter,
+    JDRecruitmentAdapter.source: JDRecruitmentAdapter,
+    KimiRecruitmentAdapter.source: KimiRecruitmentAdapter,
+    KuaishouRecruitmentAdapter.source: KuaishouRecruitmentAdapter,
+    MeituanRecruitmentAdapter.source: MeituanRecruitmentAdapter,
+    MiniMaxRecruitmentAdapter.source: MiniMaxRecruitmentAdapter,
+    PDDRecruitmentAdapter.source: PDDRecruitmentAdapter,
     TencentRecruitmentAdapter.source: TencentRecruitmentAdapter,
+    XiaomiRecruitmentAdapter.source: XiaomiRecruitmentAdapter,
+    XiaohongshuRecruitmentAdapter.source: XiaohongshuRecruitmentAdapter,
+    ZhipuRecruitmentAdapter.source: ZhipuRecruitmentAdapter,
 }
 
 

@@ -2,7 +2,9 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from niuke_mianjing_backend.api.security import is_valid_admin_token
 from niuke_mianjing_backend.services.event_bus import EventBus
+from niuke_mianjing_backend.utils.logger import get_logger
 
+logger = get_logger(__name__)
 
 router = APIRouter(tags=["WebSocket"])
 
@@ -21,7 +23,7 @@ async def websocket_crawl(websocket: WebSocket):
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         event_bus.remove_ws_connection(websocket)
-        print(f"WebSocket 客户端断开连接，当前连接数: {len(event_bus._ws_connections)}")
+        logger.info("WebSocket 客户端断开连接，当前连接数: %d", len(event_bus._ws_connections))
 
 
 @router.websocket("/api/ws")
@@ -38,4 +40,4 @@ async def websocket_general(websocket: WebSocket):
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         event_bus.remove_ws_connection(websocket)
-        print(f"WebSocket 客户端断开连接，当前连接数: {len(event_bus._ws_connections)}")
+        logger.info("WebSocket 客户端断开连接，当前连接数: %d", len(event_bus._ws_connections))

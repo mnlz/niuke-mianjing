@@ -49,3 +49,38 @@ export const parseSseChunk = (buffer: string) => {
   })
   return { events, rest }
 }
+
+export type CoverPreviewData = {
+  title: string
+  src: string
+  hint: string
+}
+
+export const computeCoverPreview = (
+  customCover: CustomCover | null,
+  generatedCover: CustomCover | null,
+  article: { cover_base64?: string | null; cover_mime?: string | null } | null,
+): CoverPreviewData | null => {
+  if (customCover) {
+    return {
+      title: '自定义封面',
+      src: `data:${customCover.mime};base64,${customCover.base64}`,
+      hint: customCover.name,
+    }
+  }
+  if (generatedCover) {
+    return {
+      title: 'AI 封面',
+      src: `data:${generatedCover.mime};base64,${generatedCover.base64}`,
+      hint: generatedCover.name,
+    }
+  }
+  if (article?.cover_base64) {
+    return {
+      title: 'AI 封面',
+      src: `data:${article.cover_mime || 'image/png'};base64,${article.cover_base64}`,
+      hint: '已保存到数据库',
+    }
+  }
+  return null
+}

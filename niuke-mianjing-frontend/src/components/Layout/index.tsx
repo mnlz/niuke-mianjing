@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Badge, Button, Layout, Menu, Typography } from 'antd'
 import {
   BarChartOutlined,
+  ApiOutlined,
   ClockCircleOutlined,
   DatabaseOutlined,
   FileMarkdownOutlined,
@@ -11,6 +12,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SendOutlined,
+  SolutionOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -27,6 +29,8 @@ const menuItems = [
   { key: '/schedule', icon: <ClockCircleOutlined />, label: '定时任务' },
   { key: '/logs', icon: <FileSearchOutlined />, label: '爬取日志' },
   { key: '/data', icon: <DatabaseOutlined />, label: '面经数据' },
+  { key: '/recruitment-jobs', icon: <SolutionOutlined />, label: '岗位管理' },
+  { key: '/ai-models', icon: <ApiOutlined />, label: 'AI 模型' },
   { key: '/cards', icon: <FileMarkdownOutlined />, label: '卡片工坊' },
   { key: '/wechat', icon: <SendOutlined />, label: '公众号工坊' },
 ]
@@ -35,7 +39,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const { connected, progresses } = useCrawlStore()
+  const connected = useCrawlStore((s) => s.connected)
+  const progresses = useCrawlStore((s) => s.progresses)
   useWebSocket()
 
   const runningCount = useMemo(

@@ -1,10 +1,11 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
 from niuke_mianjing_backend.api.deps import get_review_service
 from niuke_mianjing_backend.api.middleware.error_handler import BadRequestException
+from niuke_mianjing_backend.api.routes.user_auth import require_user_id
 from niuke_mianjing_backend.schemas import ApiResponse
 from niuke_mianjing_backend.services.review_service import ReviewService
 
@@ -21,22 +22,22 @@ class ReviewProgressRequest(BaseModel):
 @router.get("/progress", response_model=ApiResponse[list])
 async def get_progress(
     record_ids: str = Query("", description="逗号分隔的面经记录 ID"),
-    visitor_id: str = Header("anonymous", alias="X-Visitor-ID"),
+    user_id: int = Depends(require_user_id),
     review_service: ReviewService = Depends(get_review_service),
 ):
     ids = [int(item) for item in record_ids.split(",") if item.strip().isdigit()]
-    return ApiResponse(message="获取成功", data=await review_service.get_progress(visitor_id, ids))
+    return ApiResponse(message="获取成功", data=await review_service.get_progress(user_id, ids))
 
 
 @router.put("/progress/{record_id}", response_model=ApiResponse[dict])
 async def update_progress(
     record_id: int,
     request: ReviewProgressRequest,
-    visitor_id: str = Header("anonymous", alias="X-Visitor-ID"),
+    user_id: int = Depends(require_user_id),
     review_service: ReviewService = Depends(get_review_service),
 ):
     try:
-        data = await review_service.update_progress(visitor_id, record_id, request.favorite, request.mastery, request.note)
+        data = await review_service.update_progress(user_id, record_id, request.favorite, request.mastery, request.note)
     except ValueError as exc:
         raise BadRequestException(str(exc))
     return ApiResponse(message="保存成功", data=data)

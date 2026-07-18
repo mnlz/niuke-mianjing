@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useCrawlStore } from '@/store/crawlStore'
 import type { WSMessage } from '@/api/types'
 import { getAdminToken } from '@/utils/auth'
@@ -12,7 +13,9 @@ function getWsUrl() {
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>()
-  const { setConnected, handleMessage } = useCrawlStore()
+  const { setConnected, handleMessage } = useCrawlStore(
+    useShallow((s) => ({ setConnected: s.setConnected, handleMessage: s.handleMessage })),
+  )
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
