@@ -267,6 +267,33 @@ class NiukeRepository(BaseRepository):
             "companies": [row[0] for row in company_rows],
         }
 
+    async def get_classification_rows(
+        self,
+        post: Optional[str] = None,
+        company: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        conditions = []
+        params = []
+        if post:
+            conditions.append("post = %s")
+            params.append(post)
+        if company:
+            conditions.append("company = %s")
+            params.append(company)
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        rows = await self._fetch_all(
+            f"""
+            SELECT id, title, LEFT(content, 1500), post
+            FROM niuke {where}
+            ORDER BY edit_time DESC
+            """,
+            tuple(params) if params else None,
+        )
+        return [
+            {"id": row[0], "title": row[1], "content": row[2], "post": row[3]}
+            for row in rows
+        ]
+
     async def upsert_content(self, items: List[Dict]) -> Dict[str, int]:
         pool = await self._get_pool()
         new_count = 0

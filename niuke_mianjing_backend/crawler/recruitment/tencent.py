@@ -66,8 +66,9 @@ class TencentRecruitmentAdapter(RecruitmentAdapter):
         total = int(result.get("Count") or 0)
         items = []
         for raw in result.get("Posts") or []:
-            detail = self.fetch_detail(str(raw.get("PostId"))) if include_detail else raw
-            items.append(self._normalize_job(detail, recruitment_type))
+            detail = self.fetch_detail(str(raw.get("PostId"))) if include_detail else {}
+            merged = {**raw, **{key: value for key, value in detail.items() if value not in (None, "")}}
+            items.append(self._normalize_job(merged, recruitment_type))
             if include_detail and self.sleep_interval > 0:
                 time.sleep(min(self.sleep_interval, 1))
 
@@ -173,6 +174,12 @@ class TencentRecruitmentAdapter(RecruitmentAdapter):
             title=str(raw.get("RecruitPostName") or "").strip(),
             category=raw.get("CategoryName"),
             job_family=raw.get("CategoryName"),
+            official_taxonomy={
+                "level1": {"code": raw.get("CategoryId"), "name": raw.get("CategoryName"), "path": "CategoryName"},
+                "level2": None,
+                "level3": None,
+                "tags": [],
+            },
             location=raw.get("LocationName"),
             country=raw.get("CountryName") or "中国",
             business_unit=raw.get("BGName") or raw.get("ComName"),
@@ -201,6 +208,16 @@ class TencentRecruitmentAdapter(RecruitmentAdapter):
             title=str(detail.get("title") or raw.get("positionTitle") or "").strip(),
             category=category,
             job_family=category,
+            official_taxonomy={
+                "level1": {"code": detail.get("tid") or family_code, "name": category, "path": "detail.tidName"},
+                "level2": {
+                    "code": detail.get("subDirectionId"),
+                    "name": detail.get("techTagName"),
+                    "path": "detail.subDirectionId",
+                },
+                "level3": None,
+                "tags": ([{"code": None, "name": str(detail.get("techTagName"))}] if detail.get("techTagName") else []),
+            },
             location="、".join(detail.get("workCityList") or []) or str(raw.get("workCities") or "").strip() or None,
             country="中国",
             business_unit=str(raw.get("bgs") or "").strip() or None,

@@ -12,15 +12,15 @@ const EMPTY: FilterOptions = { posts: [], companies: [] }
  * @example
  * const { postOptions, companyOptions } = useFilterOptions()
  */
-export function useFilterOptions() {
+export function useFilterOptions(company = '') {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>(EMPTY)
 
   useEffect(() => {
     logApi
-      .filters()
+      .filters({ company: company || undefined })
       .then((data) => setFilterOptions(data || EMPTY))
       .catch(() => message.warning('筛选项加载失败，可继续查看已有数据'))
-  }, [])
+  }, [company])
 
   const postOptions = useMemo(
     () => [{ label: '全部方向', value: '' }, ...filterOptions.posts.map((p) => ({ label: p, value: p }))],
@@ -32,5 +32,5 @@ export function useFilterOptions() {
     [filterOptions.companies],
   )
 
-  return { filterOptions, postOptions, companyOptions }
+  return { filterOptions, postOptions, companyOptions, roleGroups: filterOptions.role_groups || [] }
 }

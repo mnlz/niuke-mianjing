@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Header, Query
 
 from niuke_mianjing_backend.api.deps import get_log_service
-from niuke_mianjing_backend.api.middleware.error_handler import NotFoundException
+from niuke_mianjing_backend.api.middleware.error_handler import BadRequestException, NotFoundException
 from niuke_mianjing_backend.api.routes.user_auth import optional_user_id, require_public_window
 from niuke_mianjing_backend.api.security import is_valid_admin_token
 from niuke_mianjing_backend.schemas import (
@@ -14,6 +14,7 @@ from niuke_mianjing_backend.schemas import (
     StatsData,
 )
 from niuke_mianjing_backend.services.log_service import LogService
+from niuke_mianjing_backend.utils.role_taxonomy import ROLE_FAMILY_LABELS, ROLE_GROUP_LABELS
 
 
 router = APIRouter(prefix="/api/logs", tags=["日志查询"])
@@ -57,9 +58,10 @@ async def get_stats(
     description="返回数据库中已有的岗位方向和公司列表。",
 )
 async def get_filters(
+    company: Optional[str] = Query(None, description="公司名称"),
     log_service: LogService = Depends(get_log_service),
 ):
-    filters = await log_service.get_filters()
+    filters = await log_service.get_filters(company)
     return ApiResponse(message="获取成功", data=filters)
 
 
@@ -72,6 +74,8 @@ async def get_filters(
 async def get_niuke_data(
     post: Optional[str] = Query(None, description="岗位方向"),
     company: Optional[str] = Query(None, description="公司名称"),
+    role_group: Optional[str] = Query(None, max_length=40, description="统一职位大类"),
+    role_family: Optional[str] = Query(None, max_length=40, description="统一岗位族"),
     limit: int = Query(20, description="每页条数", ge=1, le=100),
     offset: int = Query(0, description="偏移量", ge=0),
     user_id: Optional[int] = Depends(optional_user_id),
@@ -79,7 +83,11 @@ async def get_niuke_data(
     log_service: LogService = Depends(get_log_service),
 ):
     require_public_window(offset, limit, user_id, is_valid_admin_token(x_admin_token))
-    result = await log_service.get_niuke_data(post, company, limit, offset)
+    if role_group and role_group not in ROLE_GROUP_LABELS:
+        raise BadRequestException(f"不支持的职位大类：{role_group}")
+    if role_family and role_family not in {*ROLE_FAMILY_LABELS, "unknown"}:
+        raise BadRequestException(f"不支持的岗位族：{role_family}")
+    result = await log_service.get_niuke_data(post, company, role_group, role_family, limit, offset)
     return ApiResponse(message="获取成功", data=result)
 
 

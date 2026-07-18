@@ -17,6 +17,13 @@ class RecruitmentJobRepository(BaseRepository):
                 `title` VARCHAR(300) NOT NULL,
                 `category` VARCHAR(120) NULL,
                 `job_family` VARCHAR(120) NULL,
+                `official_taxonomy` JSON NULL,
+                `role_group` VARCHAR(40) NULL,
+                `role_family` VARCHAR(40) NULL,
+                `specialties` JSON NULL,
+                `business_domains` JSON NULL,
+                `tech_stack` JSON NULL,
+                `classification_meta` JSON NULL,
                 `inferred_track` VARCHAR(40) NULL,
                 `inferred_track_name` VARCHAR(80) NULL,
                 `display_category` VARCHAR(80) NULL,
@@ -43,6 +50,7 @@ class RecruitmentJobRepository(BaseRepository):
                 `synced_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 UNIQUE KEY `uk_official_job` (`source`, `source_job_id`, `recruitment_type`),
                 KEY `idx_source_type` (`source`, `recruitment_type`),
+                KEY `idx_role_family` (`role_family`),
                 KEY `idx_track` (`inferred_track`),
                 KEY `idx_refresh_version` (`refresh_version`),
                 KEY `idx_latest_source_type` (`is_latest`, `source`, `recruitment_type`),
@@ -54,6 +62,14 @@ class RecruitmentJobRepository(BaseRepository):
         await self._ensure_column("official_recruitment_jobs", "refresh_version", "`refresh_version` VARCHAR(80) NULL")
         await self._ensure_column("official_recruitment_jobs", "refresh_started_at", "`refresh_started_at` DATETIME NULL")
         await self._ensure_column("official_recruitment_jobs", "is_latest", "`is_latest` TINYINT NOT NULL DEFAULT 1")
+        await self._ensure_column("official_recruitment_jobs", "official_taxonomy", "`official_taxonomy` JSON NULL")
+        await self._ensure_column("official_recruitment_jobs", "role_group", "`role_group` VARCHAR(40) NULL")
+        await self._ensure_column("official_recruitment_jobs", "role_family", "`role_family` VARCHAR(40) NULL")
+        await self._ensure_column("official_recruitment_jobs", "specialties", "`specialties` JSON NULL")
+        await self._ensure_column("official_recruitment_jobs", "business_domains", "`business_domains` JSON NULL")
+        await self._ensure_column("official_recruitment_jobs", "tech_stack", "`tech_stack` JSON NULL")
+        await self._ensure_column("official_recruitment_jobs", "classification_meta", "`classification_meta` JSON NULL")
+        await self._ensure_index("official_recruitment_jobs", "idx_role_family", "KEY `idx_role_family` (`role_family`)")
         await self._ensure_index("official_recruitment_jobs", "idx_refresh_version", "KEY `idx_refresh_version` (`refresh_version`)")
         await self._ensure_index("official_recruitment_jobs", "idx_latest_source_type", "KEY `idx_latest_source_type` (`is_latest`, `source`, `recruitment_type`)")
         await self._execute(
@@ -66,12 +82,14 @@ class RecruitmentJobRepository(BaseRepository):
                 `status` VARCHAR(30) NOT NULL,
                 `job_count` INT NOT NULL DEFAULT 0,
                 `error_message` TEXT NULL,
+                `quality_json` JSON NULL,
                 `started_at` DATETIME NOT NULL,
                 `finished_at` DATETIME NULL,
                 UNIQUE KEY `uk_refresh_run` (`refresh_version`, `source`, `recruitment_type`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='官方招聘岗位刷新记录'
             """
         )
+        await self._ensure_column("official_recruitment_refresh_runs", "quality_json", "`quality_json` JSON NULL")
 
     async def upsert_many(
         self,
@@ -86,6 +104,8 @@ class RecruitmentJobRepository(BaseRepository):
             """
             INSERT INTO official_recruitment_jobs (
                 source, source_job_id, company, title, category, job_family,
+                official_taxonomy, role_group, role_family, specialties,
+                business_domains, tech_stack, classification_meta,
                 inferred_track, inferred_track_name, display_category,
                 location, country, business_unit, product, recruitment_type,
                 employment_type, experience, description, requirements,
@@ -94,6 +114,8 @@ class RecruitmentJobRepository(BaseRepository):
                 updated_at, crawled_at
             ) VALUES (
                 %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s,
+                %s, %s, %s,
                 %s, %s, %s,
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
@@ -106,6 +128,13 @@ class RecruitmentJobRepository(BaseRepository):
                 title = VALUES(title),
                 category = VALUES(category),
                 job_family = VALUES(job_family),
+                official_taxonomy = VALUES(official_taxonomy),
+                role_group = VALUES(role_group),
+                role_family = VALUES(role_family),
+                specialties = VALUES(specialties),
+                business_domains = VALUES(business_domains),
+                tech_stack = VALUES(tech_stack),
+                classification_meta = VALUES(classification_meta),
                 inferred_track = VALUES(inferred_track),
                 inferred_track_name = VALUES(inferred_track_name),
                 display_category = VALUES(display_category),
@@ -142,11 +171,33 @@ class RecruitmentJobRepository(BaseRepository):
             (refresh_version, source, recruitment_type),
         )
 
+    async def latest_job_count(self, source: str, recruitment_type: str) -> int:
+        row = await self._fetch_one(
+            "SELECT COUNT(*) FROM official_recruitment_jobs WHERE source = %s AND recruitment_type = %s AND is_latest = 1",
+            (source, recruitment_type),
+        )
+        return int(row[0] or 0) if row else 0
+
+    async def latest_refresh_quality(self, source: str, recruitment_type: str) -> Dict[str, Any]:
+        row = await self._fetch_one(
+            """
+            SELECT quality_json
+            FROM official_recruitment_refresh_runs
+            WHERE source = %s AND recruitment_type = %s AND status = 'success'
+            ORDER BY finished_at DESC, id DESC
+            LIMIT 1
+            """,
+            (source, recruitment_type),
+        )
+        return self._json_value(row[0], {}) if row else {}
+
     async def list_latest_jobs(self, source: str, recruitment_type: str) -> List[Dict[str, Any]]:
         rows = await self._fetch_all(
             """
             SELECT
                 source, source_job_id, company, title, category, job_family,
+                official_taxonomy, role_group, role_family, specialties,
+                business_domains, tech_stack, classification_meta,
                 inferred_track, inferred_track_name, display_category,
                 location, country, business_unit, product, recruitment_type,
                 employment_type, experience, description, requirements,
@@ -165,6 +216,8 @@ class RecruitmentJobRepository(BaseRepository):
             """
             SELECT
                 source, source_job_id, company, title, category, job_family,
+                official_taxonomy, role_group, role_family, specialties,
+                business_domains, tech_stack, classification_meta,
                 inferred_track, inferred_track_name, display_category,
                 location, country, business_unit, product, recruitment_type,
                 employment_type, experience, description, requirements,
@@ -216,6 +269,7 @@ class RecruitmentJobRepository(BaseRepository):
                 status = 'running',
                 job_count = 0,
                 error_message = NULL,
+                quality_json = NULL,
                 started_at = VALUES(started_at),
                 finished_at = NULL
             """,
@@ -230,14 +284,15 @@ class RecruitmentJobRepository(BaseRepository):
         status: str,
         job_count: int,
         error_message: Optional[str] = None,
+        quality: Optional[Dict[str, Any]] = None,
     ):
         await self._execute(
             """
             UPDATE official_recruitment_refresh_runs
-            SET status = %s, job_count = %s, error_message = %s, finished_at = CURRENT_TIMESTAMP
+            SET status = %s, job_count = %s, error_message = %s, quality_json = %s, finished_at = CURRENT_TIMESTAMP
             WHERE refresh_version = %s AND source = %s AND recruitment_type = %s
             """,
-            (status, job_count, error_message, version, source, recruitment_type),
+            (status, job_count, error_message, json.dumps(quality or {}, ensure_ascii=False), version, source, recruitment_type),
         )
 
     def _to_row(
@@ -256,6 +311,13 @@ class RecruitmentJobRepository(BaseRepository):
             self._str(job.get("title"), 300),
             self._str(job.get("category"), 120),
             self._str(job.get("job_family"), 120),
+            json.dumps(job.get("official_taxonomy") or {}, ensure_ascii=False),
+            self._str(job.get("role_group"), 40),
+            self._str(job.get("role_family"), 40),
+            json.dumps(job.get("specialties") or [], ensure_ascii=False),
+            json.dumps(job.get("business_domains") or [], ensure_ascii=False),
+            json.dumps(job.get("tech_stack") or [], ensure_ascii=False),
+            json.dumps(job.get("classification_meta") or {}, ensure_ascii=False),
             self._str(job.get("inferred_track"), 40),
             self._str(job.get("inferred_track_name"), 80),
             self._str(job.get("display_category"), 80),
@@ -288,27 +350,34 @@ class RecruitmentJobRepository(BaseRepository):
             "title": row[3],
             "category": row[4],
             "job_family": row[5],
-            "inferred_track": row[6],
-            "inferred_track_name": row[7],
-            "display_category": row[8],
-            "location": row[9],
-            "country": row[10],
-            "business_unit": row[11],
-            "product": row[12],
-            "recruitment_type": row[13],
-            "employment_type": row[14],
-            "experience": row[15],
-            "description": row[16] or "",
-            "requirements": row[17] or "",
-            "highlights": row[18] or "",
-            "preferred_qualifications": row[19] or "",
-            "source_url": row[20],
-            "detail_status": row[21],
-            "refresh_version": row[22],
-            "refresh_started_at": self._format_datetime(row[23]),
-            "updated_at": self._format_datetime(row[24]),
-            "crawled_at": self._format_datetime(row[25]),
-            "synced_at": self._format_datetime(row[26]),
+            "official_taxonomy": self._json_value(row[6], {}),
+            "role_group": row[7],
+            "role_family": row[8],
+            "specialties": self._json_value(row[9], []),
+            "business_domains": self._json_value(row[10], []),
+            "tech_stack": self._json_value(row[11], []),
+            "classification_meta": self._json_value(row[12], {}),
+            "inferred_track": row[13],
+            "inferred_track_name": row[14],
+            "display_category": row[15],
+            "location": row[16],
+            "country": row[17],
+            "business_unit": row[18],
+            "product": row[19],
+            "recruitment_type": row[20],
+            "employment_type": row[21],
+            "experience": row[22],
+            "description": row[23] or "",
+            "requirements": row[24] or "",
+            "highlights": row[25] or "",
+            "preferred_qualifications": row[26] or "",
+            "source_url": row[27],
+            "detail_status": row[28],
+            "refresh_version": row[29],
+            "refresh_started_at": self._format_datetime(row[30]),
+            "updated_at": self._format_datetime(row[31]),
+            "crawled_at": self._format_datetime(row[32]),
+            "synced_at": self._format_datetime(row[33]),
         }
 
     async def _ensure_column(self, table: str, column: str, definition: str):
@@ -338,6 +407,17 @@ class RecruitmentJobRepository(BaseRepository):
         if value in (None, ""):
             return None
         return str(value)[:max_length]
+
+    @staticmethod
+    def _json_value(value: Any, default: Any):
+        if value in (None, ""):
+            return default
+        if isinstance(value, (dict, list)):
+            return value
+        try:
+            return json.loads(value)
+        except (TypeError, ValueError):
+            return default
 
     @staticmethod
     def _parse_datetime(value: Any) -> Optional[datetime]:

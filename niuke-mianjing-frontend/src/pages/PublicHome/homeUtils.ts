@@ -1,61 +1,89 @@
 import type { NiukeRecord, StatsData } from '@/api/types'
 
+export interface JobMarketSnapshot {
+  sourceCount: number
+  aiCompanyCount: number
+  company: string
+  recruitmentType: string
+  totalJobs: number
+  aiJobs: number
+  engineeringJobs: number
+}
+
 export const featuredInterviewCompanies = ['字节跳动', '腾讯', '阿里巴巴']
 
 export const fallbackMarketSignals = [
   {
     index: '01',
-    label: 'AI Engineering',
+    label: 'AI Opportunity',
+    metric: 'AI',
+    unit: '热门岗位',
     title: 'AI 正在成为工程岗位的通用能力',
-    text: '从 Agent、RAG 到智能化研发工具，大模型能力正在进入后端、客户端与基础架构岗位。',
-    trend: '持续升温',
+    text: '从 Agent、RAG 到 AI Infra，先看企业真实需求，再决定项目和面试准备重点。',
+    action: '查看 AI 岗位',
+    path: '/jobs?ai_hot=1',
+    tone: 'primary',
   },
   {
     index: '02',
-    label: 'Infrastructure',
-    title: '基础架构仍然决定工程上限',
-    text: '分布式系统、性能、稳定性和云原生，依然是大厂技术岗位反复强调的底层能力。',
-    trend: '长期高频',
+    label: 'Official Openings',
+    metric: '15',
+    unit: '家招聘官网',
+    title: '先看岗位，再决定投哪里',
+    text: '按统一岗位族比较不同公司的真实职责与任职要求。',
+    action: '探索官网岗位',
+    path: '/jobs',
+    tone: 'light',
   },
   {
     index: '03',
-    label: 'Real Experience',
-    title: '项目深度，比技术名词更重要',
-    text: '岗位和面试都在关注真实规模、方案取舍、效果指标，以及你到底解决了什么问题。',
-    trend: '核心信号',
+    label: 'AI Offer Plan',
+    metric: '1份',
+    unit: '专属作战报告',
+    title: '把岗位要求变成准备清单',
+    text: '结合简历、岗位和真实面经，生成项目深挖、八股、算法题与简历修改建议。',
+    action: '生成我的报告',
+    path: '/ai-analysis/create?report=full',
+    tone: 'accent',
   },
 ]
 
-export const buildMarketSignals = (stats: StatsData | null) => {
-  const posts = [...(stats?.post_stats || [])].sort((a, b) => b.count - a.count)
-  if (!stats?.total_records || posts.length < 2) return fallbackMarketSignals
-
-  const first = posts[0]
-  const second = posts[1]
-  const firstRatio = Math.round((first.count / stats.total_records) * 100)
-  const secondRatio = Math.round((second.count / stats.total_records) * 100)
+export const buildMarketSignals = (snapshot: JobMarketSnapshot | null, stats: StatsData | null) => {
+  if (!snapshot) return fallbackMarketSignals
 
   return [
     {
       index: '01',
-      label: 'Top Track',
-      title: `${first.post}是当前面经主战场`,
-      text: `本地库已有 ${first.count.toLocaleString()} 篇真实面经来自${first.post}，约占全部样本 ${firstRatio}%。`,
-      trend: '样本最高',
+      label: 'AI Opportunity',
+      metric: snapshot.aiJobs.toLocaleString(),
+      unit: '个 AI 热门岗位',
+      title: 'AI 热招已经出现，现在就看机会',
+      text: `当前${snapshot.company}${snapshot.recruitmentType}覆盖 AI 算法、AI 应用/Agent 与 AI Infra。先看企业真实需求，再准备项目与面试。`,
+      action: '立即查看 AI 岗位',
+      path: '/jobs?source=tencent&type=campus&ai_hot=1',
+      tone: 'primary',
     },
     {
       index: '02',
-      label: 'Runner-up',
-      title: `${second.post}保持高频出现`,
-      text: `${second.post}当前有 ${second.count.toLocaleString()} 篇真实面经，约占全部样本 ${secondRatio}%，适合作为第二复习重点。`,
-      trend: '高频方向',
+      label: 'Official Openings',
+      metric: snapshot.totalJobs.toLocaleString(),
+      unit: '个官网岗位',
+      title: `${snapshot.company}${snapshot.recruitmentType}，哪些岗位值得投？`,
+      text: `其中技术大类 ${snapshot.engineeringJobs.toLocaleString()} 个，职责与任职要求均可追溯到招聘官网。`,
+      action: '按岗位族筛选',
+      path: '/jobs?source=tencent&type=campus',
+      tone: 'light',
     },
     {
       index: '03',
-      label: 'Live Dataset',
-      title: '首页信号来自当前数据库',
-      text: `这些判断基于本地 ${stats.total_records.toLocaleString()} 篇真实面经统计，数据更新后这里会同步变化。`,
-      trend: '实时更新',
+      label: 'AI Offer Plan',
+      metric: snapshot.sourceCount.toLocaleString(),
+      unit: `家官网 · ${snapshot.aiCompanyCount} 家 AI 公司`,
+      title: '别只收藏岗位，把它变成 Offer 计划',
+      text: `结合 ${stats?.total_records?.toLocaleString() || '-'} 篇真实面经和个人简历，生成项目深挖、八股、算法题与简历修改建议。`,
+      action: '生成我的面试报告',
+      path: '/ai-analysis/create?report=full',
+      tone: 'accent',
     },
   ]
 }

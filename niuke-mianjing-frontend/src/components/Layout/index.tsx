@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Badge, Button, Layout, Menu, Typography } from 'antd'
 import {
   BarChartOutlined,
+  ApiOutlined,
   ClockCircleOutlined,
   DatabaseOutlined,
   FileMarkdownOutlined,
@@ -29,6 +30,7 @@ const menuItems = [
   { key: '/logs', icon: <FileSearchOutlined />, label: '爬取日志' },
   { key: '/data', icon: <DatabaseOutlined />, label: '面经数据' },
   { key: '/recruitment-jobs', icon: <SolutionOutlined />, label: '岗位管理' },
+  { key: '/ai-models', icon: <ApiOutlined />, label: 'AI 模型' },
   { key: '/cards', icon: <FileMarkdownOutlined />, label: '卡片工坊' },
   { key: '/wechat', icon: <SendOutlined />, label: '公众号工坊' },
 ]

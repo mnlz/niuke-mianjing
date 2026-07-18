@@ -28,6 +28,20 @@ const PAGE_SIZE = 12
 
 const defaultCompany = hotInterviewCompanies[0].searchName || hotInterviewCompanies[0].name
 
+const roleFamilyByPost: Record<string, string> = {
+  后端开发: 'backend_software',
+  前端开发: 'frontend_fullstack',
+  客户端开发: 'client',
+  测试: 'testing_quality',
+  运维: 'sre_devops',
+  数据开发: 'data_engineering',
+  '人工智能/算法': 'ai_algorithm',
+}
+
+const postByRoleFamily: Record<string, string> = Object.fromEntries(
+  Object.entries(roleFamilyByPost).map(([post, family]) => [family, post]),
+)
+
 const masteryOptions: Array<{ label: string; value: ReviewMastery; color: string }> = [
   { label: '未开始', value: 'new', color: 'default' },
   { label: '学习中', value: 'learning', color: 'processing' },
@@ -42,12 +56,16 @@ const PublicInterviews: React.FC = () => {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const initialPost = searchParams.get('post') || ''
+  const initialRoleFamily = searchParams.get('role_family') || roleFamilyByPost[initialPost] || ''
+  const initialRoleGroup = searchParams.get('role_group') || (initialRoleFamily ? 'engineering' : '')
   const initialCompany = searchParams.get('company') || defaultCompany
   const [selectedRecord, setSelectedRecord] = useState<NiukeRecord | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [detailTab, setDetailTab] = useState('raw')
   const [detailLoading, setDetailLoading] = useState(false)
-  const [postFilter, setPostFilter] = useState(initialPost)
+  const [postFilter, setPostFilter] = useState(initialRoleFamily ? '' : initialPost)
+  const [roleGroup, setRoleGroup] = useState(initialRoleGroup)
+  const [roleFamily, setRoleFamily] = useState(initialRoleFamily)
   const [companyFilter, setCompanyFilter] = useState(initialCompany)
   const [keyword, setKeyword] = useState('')
   const [progressMap, setProgressMap] = useState<Record<number, ReviewProgress>>({})
@@ -55,11 +73,14 @@ const PublicInterviews: React.FC = () => {
   const openedRecordIdRef = useRef<number | null>(null)
 
   const errMsg = useErrorMessage()
-  const { postOptions, companyOptions } = useFilterOptions()
+  const { companyOptions, roleGroups } = useFilterOptions(companyFilter)
+  const activeRoleGroup = roleGroups.find((item) => item.id === roleGroup)
   const { records, loading, pagination, reload: fetchRecords } = useRecords(postFilter, companyFilter, {
     paged: true,
     pageSize: PAGE_SIZE,
     errorMessage: '获取面经失败',
+    roleGroup,
+    roleFamily,
   })
 
   const selectedMarkdown = useMemo(
@@ -172,10 +193,14 @@ const PublicInterviews: React.FC = () => {
     const next = new URLSearchParams(searchParams)
     if (postFilter) next.set('post', postFilter)
     else next.delete('post')
+    if (roleGroup) next.set('role_group', roleGroup)
+    else next.delete('role_group')
+    if (roleFamily) next.set('role_family', roleFamily)
+    else next.delete('role_family')
     if (companyFilter) next.set('company', companyFilter)
     else next.delete('company')
     setSearchParams(next, { replace: true })
-  }, [postFilter, companyFilter])
+  }, [postFilter, companyFilter, roleGroup, roleFamily])
 
   useEffect(() => {
     const recordId = Number(searchParams.get('record'))
@@ -223,7 +248,7 @@ const PublicInterviews: React.FC = () => {
       return
     }
     const source = companySourceMap[companyFilter] || 'tencent'
-    const track = postTrackMap[postFilter] || 'backend'
+    const track = postTrackMap[postByRoleFamily[roleFamily] || postFilter] || 'backend'
     const params = new URLSearchParams({
       report: 'job_interviews',
       ids: analysisIds.slice(0, 8).join(','),
@@ -280,16 +305,36 @@ const PublicInterviews: React.FC = () => {
             </button>
           </div>
 
-          <div className="post-filter-strip">
-            {postOptions.map((option) => {
-              const value = String(option.value ?? '')
-              return (
-                <button key={value || 'all'} className={postFilter === value ? 'active' : ''} onClick={() => setPostFilter(value)}>
-                  {option.label}
-                </button>
-              )
-            })}
+          <div className="job-family-heading">
+            <div><b>面经大类</b><small>与职位雷达使用同一套分类</small></div>
           </div>
+          <div className="job-track-switcher job-group-switcher" aria-label="面经大类筛选">
+            <button className={!roleGroup ? 'active' : ''} onClick={() => { setRoleGroup(''); setRoleFamily(''); setPostFilter('') }}>
+              <b>全部大类</b>
+            </button>
+            {roleGroups.map((item) => (
+              <button key={item.id} className={roleGroup === item.id ? 'active' : ''} onClick={() => { setRoleGroup(item.id); setRoleFamily(''); setPostFilter('') }}>
+                <b>{item.name}</b><small>{item.count.toLocaleString()}</small>
+              </button>
+            ))}
+          </div>
+          {activeRoleGroup && (
+            <>
+              <div className="job-family-heading sublevel">
+                <div><b>{activeRoleGroup.name}岗位族</b><small>结合面经标题、岗位声明和采集方向细分</small></div>
+              </div>
+              <div className="job-track-switcher" aria-label="面经岗位族筛选">
+                <button className={!roleFamily ? 'active' : ''} onClick={() => setRoleFamily('')}>
+                  <b>全部{activeRoleGroup.name}</b><small>{activeRoleGroup.count.toLocaleString()}</small>
+                </button>
+                {activeRoleGroup.role_families.map((item) => (
+                  <button key={item.id} className={roleFamily === item.id ? 'active' : ''} onClick={() => setRoleFamily(item.id)}>
+                    <b>{item.name}</b><small>{item.count.toLocaleString()}</small>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           <Row gutter={[12, 12]} align="middle">
             <Col xs={24} md={8}>
@@ -306,7 +351,7 @@ const PublicInterviews: React.FC = () => {
 
         <ReviewOverviewCard
           companyFilter={companyFilter}
-          postFilter={postFilter}
+          roleLabel={activeRoleGroup?.role_families.find((item) => item.id === roleFamily)?.name || activeRoleGroup?.name || postFilter}
           records={visibleRecords}
           selectedIds={analysisIds}
           onToggle={toggleAnalysisRecord}
@@ -325,7 +370,7 @@ const PublicInterviews: React.FC = () => {
                     <div className="interview-card-top">
                       <Space size={8} wrap>
                         <Tag color="blue">{record.company || '未知公司'}</Tag>
-                        <Tag>{record.post}</Tag>
+                        <Tag>{record.role_family_name}</Tag>
                         <Tag color={meta.color}>{meta.label}</Tag>
                       </Space>
                       <Button

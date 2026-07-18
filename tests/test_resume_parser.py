@@ -8,6 +8,7 @@ from pypdf import PdfWriter
 
 from niuke_mianjing_backend.api.middleware.error_handler import AppException
 from niuke_mianjing_backend.api.routes import recruitment
+from niuke_mianjing_backend.services import resume_parser
 from niuke_mianjing_backend.services.resume_parser import parse_resume_pdf
 
 
@@ -32,6 +33,34 @@ def test_real_resume_samples(filename, name):
     assert result["char_count"] == len(result["text"])
     assert result["sections"]
     assert any(section["content"] for section in result["sections"])
+
+
+def test_soft_wraps_join_without_swallowing_new_items():
+    wrapped = "主要包含硬件模块、后台服务模块、客户端模块、分析报告模块、采集模块与存储模块；本人负责硬件选型、后台服务及相关业务模块开发，并"
+    another = "熟悉性能测试工具、监控工具和完整的软件测试流程，能够独立完成测试计划、测试执行、缺陷跟踪和结果分析"
+
+    assert resume_parser._join_wrapped_lines([
+        wrapped,
+        "预研跨局域网通信；开发时间：90个工作日。",
+        "项目经历",
+        another,
+        "2、性能分析：使用监控仪表板分析服务器性能指标；",
+    ]) == [
+        f"{wrapped}预研跨局域网通信；开发时间：90个工作日。",
+        "项目经历",
+        another,
+        "2、性能分析：使用监控仪表板分析服务器性能指标；",
+    ]
+
+
+def test_real_project_section_has_no_layout_soft_wraps():
+    result = parse_resume_pdf((ROOT / "简历" / "刘子扬+南京邮电大学+电子信息.pdf").read_bytes())
+    projects = next(section["content"] for section in result["sections"] if section["key"] == "projects")
+
+    assert "开发，并\n预研" not in projects
+    assert "无线\n通讯模块" not in projects
+    assert "数据帧格\n式" not in projects
+    assert "信息进\n行匹配" not in projects
 
 
 def test_invalid_pdf_is_rejected():

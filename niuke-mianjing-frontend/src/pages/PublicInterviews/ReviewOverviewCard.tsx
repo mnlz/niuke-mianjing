@@ -8,7 +8,7 @@ const { Text } = Typography
 
 interface Props {
   companyFilter: string
-  postFilter: string
+  roleLabel: string
   records: NiukeRecord[]
   selectedIds: number[]
   onToggle: (recordId: number, checked: boolean) => void
@@ -18,7 +18,7 @@ interface Props {
 
 const ReviewOverviewCard: React.FC<Props> = ({
   companyFilter,
-  postFilter,
+  roleLabel,
   records,
   selectedIds,
   onToggle,
@@ -33,7 +33,7 @@ const ReviewOverviewCard: React.FC<Props> = ({
       <div className="interview-ai-header">
         <div>
           <Text>AI Interview Analysis</Text>
-          <h2>{companyFilter || '全部公司'} / {postFilter || '全部方向'} AI 面经分析</h2>
+          <h2>{companyFilter || '全部公司'} / {roleLabel || '全部方向'} AI 面经分析</h2>
           <p>选择要交给 AI 的面经，下一步生成岗位考点、准备顺序和风险提示。</p>
         </div>
         <div>
@@ -58,7 +58,7 @@ const ReviewOverviewCard: React.FC<Props> = ({
                 <b>{record.title}</b>
                 <small>
                   <Tag color="blue">{record.company || '未知公司'}</Tag>
-                  <Tag>{record.post}</Tag>
+                  <Tag>{record.role_family_name}</Tag>
                   {formatDisplayTime(record.edit_time)}
                 </small>
               </span>

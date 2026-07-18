@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Space } from 'antd'
-import { LoginOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons'
+import { Button, Dropdown } from 'antd'
+import { LoginOutlined, LogoutOutlined } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api'
 import { clearUserSession, getUserSession, setUserSession, USER_SESSION_CHANGED_EVENT, userLoginPath } from '@/utils/auth'
@@ -24,10 +24,9 @@ const UserSessionButton: React.FC = () => {
     return <Button className="user-session-entry" type="text" icon={<LoginOutlined />} onClick={() => navigate(userLoginPath(`${location.pathname}${location.search}`))}>登录</Button>
   }
   return (
-    <Space className="user-session-actions" size={0}>
-      <Button type="text" icon={<UserOutlined />} title={session.email}>{session.display_name}</Button>
-      <Button type="text" icon={<LogoutOutlined />} onClick={() => { clearUserSession(); navigate('/') }}>退出</Button>
-    </Space>
+    <Dropdown trigger={['click']} menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: () => { clearUserSession(); navigate('/') } }] }}>
+      <Button className="ai-account-pill" type="text" title={session.email}><span className="ai-account-avatar">{session.display_name.slice(0, 1)}</span>{session.display_name}</Button>
+    </Dropdown>
   )
 }
 

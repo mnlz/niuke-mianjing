@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     OPENAI_IMAGE_GENERATIONS_URL: Optional[str] = None
     OPENAI_TEXT_MODEL: str
     OPENAI_IMAGE_MODEL: str
+    AI_MODELS_JSON: str = ""
+    AI_MODEL_SECRET_KEY: Optional[str] = None
 
     PROXY_ENABLED: bool = False
     PROXY_HOST: Optional[str] = None

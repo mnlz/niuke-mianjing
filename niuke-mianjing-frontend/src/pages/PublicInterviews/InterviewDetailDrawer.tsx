@@ -68,7 +68,7 @@ const InterviewDetailDrawer: React.FC<Props> = ({
         <div className="detail-hero-card">
           <Space size={8} wrap>
             <Tag color="blue">{record.company || '未知公司'}</Tag>
-            <Tag>{record.post}</Tag>
+            <Tag>{record.role_family_name}</Tag>
             <Tag color="default">{formatDisplayTime(record.edit_time)}</Tag>
           </Space>
           <h2>{record.title}</h2>

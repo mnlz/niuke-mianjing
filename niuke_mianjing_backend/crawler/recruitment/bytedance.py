@@ -103,6 +103,20 @@ class ByteDanceRecruitmentAdapter(RecruitmentAdapter):
             title=str(raw.get("title") or "").strip(),
             category=category.get("i18n_name") or category.get("name"),
             job_family=category_parent.get("i18n_name") or category_parent.get("name"),
+            official_taxonomy={
+                "level1": {
+                    "code": category_parent.get("id") or category_parent.get("code"),
+                    "name": category_parent.get("i18n_name") or category_parent.get("name"),
+                    "path": "job_category.parent",
+                },
+                "level2": {
+                    "code": category.get("id") or category.get("code"),
+                    "name": category.get("i18n_name") or category.get("name"),
+                    "path": "job_category",
+                },
+                "level3": None,
+                "tags": [],
+            },
             location=city.get("i18n_name") or city.get("name"),
             country=address.get("country") or country,
             business_unit=self._name(raw.get("department_info")),

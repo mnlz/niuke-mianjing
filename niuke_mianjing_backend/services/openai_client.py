@@ -2,6 +2,7 @@ import requests
 from typing import Any, Dict, List, Tuple
 
 from niuke_mianjing_backend.config import settings
+from niuke_mianjing_backend.services.ai_model_registry import ai_model_registry
 
 
 def ensure_openai_configured():
@@ -61,13 +62,19 @@ def post_chat_completion(
     temperature: float = 0.4,
     timeout: int | Tuple[int, int] = 90,
     stream: bool = False,
+    model: str | None = None,
+    model_id: int | None = None,
 ) -> requests.Response:
+    selected = ai_model_registry.resolve(model, model_id=model_id)
     try:
         return requests.post(
-            chat_completions_url(),
-            headers=openai_headers(),
+            selected.endpoint,
+            headers={
+                "Authorization": f"Bearer {selected.api_key}",
+                "Content-Type": "application/json; charset=utf-8",
+            },
             json={
-                "model": settings.OPENAI_TEXT_MODEL,
+                "model": selected.model,
                 "messages": messages,
                 "temperature": temperature,
                 **({"stream": True} if stream else {}),

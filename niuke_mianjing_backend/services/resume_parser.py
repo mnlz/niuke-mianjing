@@ -19,6 +19,12 @@ SECTION_TITLES = {
     "其他": "other",
 }
 
+_SENTENCE_ENDINGS = tuple("。；！？!?;：:")
+_NEW_ITEM_PREFIXES = (
+    "熟悉", "熟练", "掌握", "了解", "精通", "负责", "参与", "具备", "能够", "善于",
+    "项目名称", "项目简介", "项目描述", "项目成果", "主要工作", "核心技术", "受奖经历",
+)
+
 
 def _extract_page(page) -> str:
     try:
@@ -29,6 +35,32 @@ def _extract_page(page) -> str:
 
 def _clean_lines(text: str) -> list[str]:
     return [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines() if line.strip()]
+
+
+def _looks_like_new_item(line: str) -> bool:
+    return (
+        line in SECTION_TITLES
+        or line.startswith(_NEW_ITEM_PREFIXES)
+        or bool(re.match(r"^\d+[、.．)]", line))
+        or bool(re.match(r"^.{1,12}[：:]", line))
+    )
+
+
+def _join_wrapped_lines(lines: list[str]) -> list[str]:
+    result: list[str] = []
+    previous_source_length = 0
+    for line in lines:
+        if (
+            result
+            and previous_source_length >= 55
+            and not result[-1].endswith(_SENTENCE_ENDINGS)
+            and not _looks_like_new_item(line)
+        ):
+            result[-1] += line
+        else:
+            result.append(line)
+        previous_source_length = len(line)
+    return result
 
 
 def _extract_name(lines: list[str]) -> str:
@@ -79,7 +111,7 @@ def parse_resume_pdf(content: bytes) -> dict:
     except Exception as exc:
         raise ValueError(f"PDF 解析失败：{exc}") from exc
 
-    lines = _clean_lines(raw_text)
+    lines = _join_wrapped_lines(_clean_lines(raw_text))
     text = "\n".join(lines).strip()[:12000]
     if not text:
         raise ValueError("PDF 未解析出可用文本，请换成文本型 PDF")

@@ -11,6 +11,8 @@ interface UseRecordsOptions {
   paged?: boolean
   /** 加载失败时的提示文案 */
   errorMessage?: string
+  roleGroup?: string
+  roleFamily?: string
 }
 
 interface UseRecordsResult {
@@ -37,7 +39,7 @@ export function useRecords(
   companyFilter: string,
   options: UseRecordsOptions = {},
 ): UseRecordsResult {
-  const { pageSize: defaultPageSize = 100, paged = false, errorMessage } = options
+  const { pageSize: defaultPageSize = 100, paged = false, errorMessage, roleGroup, roleFamily } = options
 
   const [records, setRecords] = useState<NiukeRecord[]>([])
   const [loading, setLoading] = useState(false)
@@ -52,6 +54,8 @@ export function useRecords(
         const data = await logApi.records({
           post: postFilter || undefined,
           company: companyFilter || undefined,
+          role_group: roleGroup || undefined,
+          role_family: roleFamily || undefined,
           limit: size,
           offset,
         })
@@ -74,7 +78,7 @@ export function useRecords(
         setLoading(false)
       }
     },
-    [postFilter, companyFilter, paged, errorMessage, pagination.pageSize],
+    [postFilter, companyFilter, roleGroup, roleFamily, paged, errorMessage, pagination.pageSize],
   )
 
   return { records, loading, pagination, reload, setRecords }

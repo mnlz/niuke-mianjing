@@ -52,6 +52,10 @@ class NiukeDataItem(BaseModel):
     edit_time: Optional[str] = None
     read: Optional[int] = None
     post: str
+    role_group: str = "unknown"
+    role_family: str = "unknown"
+    role_group_name: str = "其他"
+    role_family_name: str = "其他岗位"
     company: str
     status: int
 

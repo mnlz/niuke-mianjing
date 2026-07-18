@@ -45,6 +45,10 @@ export interface NiukeRecord {
   title: string
   company: string
   post: string
+  role_group: string
+  role_family: string
+  role_group_name: string
+  role_family_name: string
   content: string
   edit_time: string | null
   read: number | null
@@ -114,6 +118,17 @@ export interface ExportMdRequest {
 export interface FilterOptions {
   posts: string[]
   companies: string[]
+  role_groups?: RoleGroupFacet[]
+}
+
+export interface RoleFamilyFacet {
+  id: string
+  name: string
+  count: number
+}
+
+export interface RoleGroupFacet extends RoleFamilyFacet {
+  role_families: RoleFamilyFacet[]
 }
 
 export type ReviewMastery = 'new' | 'learning' | 'fuzzy' | 'mastered'
@@ -205,6 +220,24 @@ export interface RecruitmentJob {
   title: string
   category?: string | null
   job_family?: string | null
+  official_taxonomy?: {
+    level1?: { code?: string | null; name?: string | null; path?: string | null } | null
+    level2?: { code?: string | null; name?: string | null; path?: string | null } | null
+    level3?: { code?: string | null; name?: string | null; path?: string | null } | null
+    tags?: Array<{ code?: string | null; name: string }>
+  }
+  role_group?: string | null
+  role_family?: string | null
+  specialties?: string[]
+  business_domains?: string[]
+  tech_stack?: string[]
+  classification_meta?: {
+    version?: string
+    confidence?: number
+    source_field_paths?: string[]
+    matched_rules?: string[]
+    fallback?: boolean
+  }
   inferred_track?: string | null
   inferred_track_name?: string | null
   display_category?: string | null
@@ -228,8 +261,13 @@ export interface RecruitmentJobPage {
   source: string
   company: string
   track?: string | null
+  role_group?: string | null
+  role_family?: string | null
   recruitment_type?: RecruitmentType
   keywords?: string[]
+  facet_total?: number
+  role_families?: Array<{ id: string; name: string; count: number }>
+  role_groups?: RoleGroupFacet[]
   items: RecruitmentJob[]
   page: number
   page_size: number
@@ -287,6 +325,37 @@ export interface ParsedResume {
   sections: ParsedResumeSection[]
 }
 
+export interface AIModelPublic {
+  id: number
+  model: string
+  channel_name: string
+  description: string
+  is_default: boolean
+}
+
+export interface AIModelAdmin extends AIModelPublic {
+  endpoint: string
+  enabled: boolean
+  source: 'env' | 'legacy' | 'database'
+  api_key_masked: string
+}
+
+export interface AIModelInput {
+  model: string
+  channel_name: string
+  endpoint: string
+  api_key?: string
+  description?: string
+  enabled?: boolean
+  is_default?: boolean
+}
+
+export interface AIModelTestResult {
+  model_id: number
+  success: boolean
+  elapsed_ms: number
+}
+
 export interface RecruitmentAIReportRecord {
   report_code: string
   title: string
@@ -297,6 +366,7 @@ export interface RecruitmentAIReportRecord {
   recruitment_type: RecruitmentType
   content: string
   model: string
+  model_id?: number | null
   created_at: string
   updated_at?: string | null
 }

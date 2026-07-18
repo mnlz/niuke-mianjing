@@ -38,7 +38,7 @@ def test_generated_report_is_saved_for_current_user(monkeypatch):
     monkeypatch.setattr(recruitment, "ai_report_repo", repo)
     monkeypatch.setattr(recruitment, "_job_samples", fake_job_samples)
     monkeypatch.setattr(recruitment, "jobs_brief", lambda jobs: "岗位样本")
-    monkeypatch.setattr(recruitment, "call_ai_report", lambda prompt: "# 岗位报告")
+    monkeypatch.setattr(recruitment, "call_ai_report", lambda prompt, model=None, model_id=None: "# 岗位报告")
 
     response = asyncio.run(recruitment.generate_recruitment_ai_report(
         recruitment.RecruitmentAIReportRequest(report_type="job", source="tencent", track="backend"),

@@ -11,6 +11,7 @@ from niuke_mianjing_backend.config import settings
 from niuke_mianjing_backend.repositories.database import DatabasePool
 from niuke_mianjing_backend.repositories.recruitment_job_repo import RecruitmentJobRepository
 from niuke_mianjing_backend.repositories.ai_report_repo import AIReportRepository
+from niuke_mianjing_backend.services.ai_model_registry import ai_model_registry
 from niuke_mianjing_backend.utils.logger import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -46,6 +47,10 @@ async def lifespan(app: FastAPI):
 
     await AIReportRepository().init_table()
     logger.info("AI 分析报告表初始化完成")
+
+    await ai_model_registry.repo.init_table()
+    await ai_model_registry.refresh()
+    logger.info("AI 模型配置表初始化完成")
 
     schedule_service.start()
     await schedule_service.restore_jobs()

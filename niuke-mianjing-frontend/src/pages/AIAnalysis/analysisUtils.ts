@@ -7,6 +7,10 @@ export const extractResumeContacts = (text: string) => {
   const phone = text.match(/(?:\+?86[\s-]?)?1[3-9](?:[\s-]?\d){9}/)?.[0].replace(/(?:\+?86)|[\s-]/g, '') || ''
   return { email, phone }
 }
+export const replaceFirstText = (source: string, previous: string, next: string) => {
+  const index = previous ? source.indexOf(previous) : -1
+  return index < 0 ? source : `${source.slice(0, index)}${next}${source.slice(index + previous.length)}`
+}
 export const resumeRequirementError = (required: boolean, text: string, confirmed: boolean) => {
   if (!required) return ''
   if (!text.trim()) return '请先上传或粘贴简历'
@@ -29,8 +33,10 @@ export interface AnalysisConfig {
   recruitmentType: RecruitmentType
   track: string
   trackName: string
+  sourceJobId?: string
   interviewIds: number[]
   resume: string
+  modelId: number
 }
 
 export interface AnalysisReportRecord {
@@ -53,6 +59,8 @@ export const buildAnalysisRequest = (config: AnalysisConfig) => {
     source: string
     recruitment_type: RecruitmentType
     track: string
+    model_id: number
+    source_job_id?: string
     compare_sources?: string[]
     selected_interview_ids?: number[]
     resume?: string
@@ -61,10 +69,13 @@ export const buildAnalysisRequest = (config: AnalysisConfig) => {
     source: config.source,
     recruitment_type: config.recruitmentType,
     track: config.track,
+    model_id: config.modelId,
   }
 
   if (config.reportType === 'company_compare' || config.reportType === 'resume_match') {
     request.compare_sources = config.compareSources
+  } else if (config.sourceJobId) {
+    request.source_job_id = config.sourceJobId
   }
   if (config.reportType === 'job_interviews' || config.reportType === 'full') {
     request.selected_interview_ids = config.interviewIds
@@ -88,7 +99,7 @@ export const filterReports = (
   })
 }
 
-export const toggleInterviewId = (current: number[], id: number, checked: boolean, max = 8) => {
+export const toggleInterviewId = (current: number[], id: number, checked: boolean, max = 12) => {
   if (!checked) return current.filter((item) => item !== id)
   if (current.includes(id) || current.length >= max) return current
   return [...current, id]

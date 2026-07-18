@@ -28,6 +28,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/api/recruitment/jobs",
         "/api/recruitment/job-interviews",
         "/api/recruitment/track-interviews",
+        "/api/recruitment/ai-models",
         "/api/recruitment/resume/parse",
         "/api/recruitment/ai-report",
         "/api/recruitment/ai-reports",

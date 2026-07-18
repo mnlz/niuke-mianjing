@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowRightOutlined, RobotOutlined, RiseOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, RobotOutlined } from '@ant-design/icons'
 import { Button, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
-import { logApi } from '@/api'
+import { logApi, recruitmentApi } from '@/api'
 import type { NiukeRecord, StatsData } from '@/api/types'
 import { companyBrands } from '@/constants/companies'
 import { formatDisplayTime } from '@/utils/datetime'
-import { buildMarketSignals, featuredInterviewCompanies, pickFeaturedInterviews } from './homeUtils'
+import { buildMarketSignals, featuredInterviewCompanies, pickFeaturedInterviews, type JobMarketSnapshot } from './homeUtils'
 import UserSessionButton from '@/components/UserSessionButton'
 
 const { Paragraph, Text, Title } = Typography
@@ -36,9 +36,23 @@ const PublicHome: React.FC = () => {
   const navigate = useNavigate()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [featured, setFeatured] = useState<NiukeRecord[]>([])
+  const [jobSnapshot, setJobSnapshot] = useState<JobMarketSnapshot | null>(null)
 
   useEffect(() => {
     logApi.stats().then(setStats).catch(() => setStats(null))
+    recruitmentApi.sources().then(async (sources) => {
+      const tencent = (sources || []).find((item) => item.source === 'tencent')
+      const page = await recruitmentApi.jobs({ source: 'tencent', recruitment_type: 'campus', ai_hot: true, page: 1, page_size: 1 })
+      setJobSnapshot({
+        sourceCount: sources?.length || 0,
+        aiCompanyCount: (sources || []).filter((item) => ['deepseek', 'kimi', 'minimax', 'zhipu'].includes(item.source)).length,
+        company: tencent?.company || '腾讯',
+        recruitmentType: '校招',
+        totalJobs: page?.facet_total || page?.total || 0,
+        aiJobs: page?.total || 0,
+        engineeringJobs: page?.role_groups?.find((item) => item.id === 'engineering')?.count || 0,
+      })
+    }).catch(() => setJobSnapshot(null))
     Promise.all(
       featuredInterviewCompanies.map((company) => logApi.records({ company, limit: 6, offset: 0 }).then((data) => data?.data || [])),
     )
@@ -47,7 +61,7 @@ const PublicHome: React.FC = () => {
   }, [])
 
   const topPosts = [...(stats?.post_stats || [])].sort((a, b) => b.count - a.count).slice(0, 6)
-  const marketSignals = buildMarketSignals(stats)
+  const marketSignals = buildMarketSignals(jobSnapshot, stats)
 
   return (
     <div className="public-page premium-home">
@@ -91,7 +105,7 @@ const PublicHome: React.FC = () => {
           <section className="premium-data-strip">
             <div><strong>{stats?.total_records?.toLocaleString() || '-'}</strong><span>真实面经</span></div>
             <div><strong>{topPosts.length || '-'}</strong><span>热门方向</span></div>
-            <div><strong>8</strong><span>招聘官网数据源</span></div>
+            <div><strong>{jobSnapshot?.sourceCount || '-'}</strong><span>招聘官网数据源</span></div>
             <div><strong>24h</strong><span>持续更新情报</span></div>
           </section>
 
@@ -113,28 +127,23 @@ const PublicHome: React.FC = () => {
           </section>
         </div>
 
-        <section className="premium-section">
+        <section className="premium-section market-opportunity-section">
           <div className="premium-section-heading">
-            <Text>Market Signals</Text>
-            <Title level={2}>真实数据里的准备重点</Title>
-            <Paragraph>直接读取当前面经库统计，不再只靠静态判断。</Paragraph>
+            <Text>Live Opportunity Radar</Text>
+            <Title level={2}>别再盲投。先看哪些机会值得冲。</Title>
+            <Paragraph>从官网岗位判断机会，从真实面经判断难度，再让 AI 把两者变成你的准备清单。</Paragraph>
           </div>
-          <div className="signal-list">
+          <div className="market-signal-grid">
             {marketSignals.map((signal) => (
-              <article key={signal.index}>
-                <span className="signal-index">{signal.index}</span>
-                <div>
-                  <Text>{signal.label}</Text>
-                  <h3>{signal.title}</h3>
-                  <p>{signal.text}</p>
-                </div>
-                <b><RiseOutlined /> {signal.trend}</b>
-              </article>
+              <button key={signal.index} className={`market-signal-card ${signal.tone}`} onClick={() => navigate(signal.path)}>
+                <div className="market-signal-meta"><span>{signal.index}</span><b>{signal.label}</b></div>
+                <div className="market-signal-metric"><strong>{signal.metric}</strong><span>{signal.unit}</span></div>
+                <h3>{signal.title}</h3>
+                <p>{signal.text}</p>
+                <footer>{signal.action} <ArrowRightOutlined /></footer>
+              </button>
             ))}
           </div>
-          <Button type="link" className="section-link" onClick={() => navigate('/jobs')}>
-            查看真实官网岗位 <ArrowRightOutlined />
-          </Button>
         </section>
 
         <section className="premium-section capability-section">

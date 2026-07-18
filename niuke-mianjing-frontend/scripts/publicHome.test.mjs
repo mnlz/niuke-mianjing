@@ -12,15 +12,24 @@ const stats = {
   ],
 }
 
-const signals = buildMarketSignals(stats)
+const signals = buildMarketSignals({
+  sourceCount: 15,
+  aiCompanyCount: 4,
+  company: '腾讯',
+  recruitmentType: '校招',
+  totalJobs: 82,
+  aiJobs: 12,
+  engineeringJobs: 33,
+}, stats)
 
 assert.equal(signals.length, 3)
-assert.equal(signals[0].title, '后端开发是当前面经主战场')
-assert.match(signals[0].text, /420 篇真实面经/)
-assert.match(signals[1].text, /19%/)
-assert.match(signals[2].text, /1,098 篇/)
+assert.equal(signals[0].title, 'AI 热招已经出现，现在就看机会')
+assert.equal(signals[0].metric, '12')
+assert.match(signals[1].text, /技术大类 33 个/)
+assert.match(signals[2].text, /1,098 篇真实面经/)
+assert.equal(signals[2].path, '/ai-analysis/create?report=full')
 
-assert.equal(buildMarketSignals(null)[0].title, 'AI 正在成为工程岗位的通用能力')
+assert.equal(buildMarketSignals(null, stats)[0].title, 'AI 正在成为工程岗位的通用能力')
 assert.deepEqual(featuredInterviewCompanies, ['字节跳动', '腾讯', '阿里巴巴'])
 
 const makeRecord = (id, company, content) => ({

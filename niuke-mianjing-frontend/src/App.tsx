@@ -19,6 +19,7 @@ const Schedule = lazy(() => import('@/pages/Schedule'))
 const Logs = lazy(() => import('@/pages/Logs'))
 const Data = lazy(() => import('@/pages/Data'))
 const RecruitmentJobs = lazy(() => import('@/pages/RecruitmentJobs'))
+const AIModels = lazy(() => import('@/pages/AIModels'))
 const QuickCrawl = lazy(() => import('@/pages/QuickCrawl'))
 const Cards = lazy(() => import('@/pages/Cards'))
 const Wechat = lazy(() => import('@/pages/Wechat'))
@@ -75,6 +76,7 @@ const AdminRoutes: React.FC = () => {
           <Route path="/logs" element={<Logs />} />
           <Route path="/data" element={<Data />} />
           <Route path="/recruitment-jobs" element={<RecruitmentJobs />} />
+          <Route path="/ai-models" element={<AIModels />} />
           <Route path="/cards" element={<Cards />} />
           <Route path="/wechat" element={<Wechat />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />

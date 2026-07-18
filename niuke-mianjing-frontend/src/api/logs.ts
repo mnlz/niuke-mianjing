@@ -8,14 +8,14 @@ export const logApi = {
   logs: (params?: { post?: string; status?: string; start_date?: string; end_date?: string; limit?: number }) =>
     client.get<ApiResponse<CrawlLog[]>>('/api/logs/crawl', { params }).then((r) => r.data.data),
 
-  records: (params?: { post?: string; company?: string; limit?: number; offset?: number }) =>
+  records: (params?: { post?: string; company?: string; role_group?: string; role_family?: string; limit?: number; offset?: number }) =>
     client.get<ApiResponse<NiukeDataResponse>>('/api/logs/data', { params }).then((r) => r.data.data),
 
   record: (id: number) =>
     client.get<ApiResponse<NiukeRecord>>(`/api/logs/data/${id}`).then((r) => r.data.data),
 
-  filters: () =>
-    client.get<ApiResponse<FilterOptions>>('/api/logs/filters').then((r) => r.data.data),
+  filters: (params?: { company?: string }) =>
+    client.get<ApiResponse<FilterOptions>>('/api/logs/filters', { params }).then((r) => r.data.data),
 }
 
 export const crawlApi = {

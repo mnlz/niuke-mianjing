@@ -1,3 +1,4 @@
+import hashlib
 import re
 import time
 from datetime import datetime
@@ -17,8 +18,20 @@ from niuke_mianjing_backend.repositories.niuke_repo import NiukeRepository
 from niuke_mianjing_backend.repositories.ai_report_repo import AIReportRepository
 from niuke_mianjing_backend.repositories.recruitment_job_repo import RecruitmentJobRepository
 from niuke_mianjing_backend.schemas import ApiResponse
-from niuke_mianjing_backend.services.recruitment_ai import call_ai_report, interviews_brief, job_brief, jobs_brief
+from niuke_mianjing_backend.services.recruitment_ai import build_full_report_prompt, call_ai_report, interviews_brief, job_brief, jobs_brief
 from niuke_mianjing_backend.services.resume_parser import parse_resume_pdf as parse_resume_content
+from niuke_mianjing_backend.services.ai_model_registry import ai_model_registry
+from niuke_mianjing_backend.services.openai_client import extract_chat_completion_text, post_chat_completion
+from niuke_mianjing_backend.utils.role_taxonomy import (
+    AI_FAMILY_PRIORITY,
+    AI_HOT_FAMILIES,
+    AI_HOT_TITLE_HINTS,
+    CLASSIFICATION_CACHE_VERSION,
+    ROLE_FAMILY_LABELS,
+    ROLE_GROUP_LABELS,
+    classify_role,
+    contains_hint as _contains_hint,
+)
 
 
 router = APIRouter(prefix="/api/recruitment", tags=["公开招聘岗位"])
@@ -31,6 +44,7 @@ class RecruitmentRefreshRequest(BaseModel):
     source: str = Field("all", description="招聘来源，all 表示全部")
     recruitment_type: str = Field("all", description="招聘类型，all 表示该来源支持的全部类型")
     max_pages: Optional[int] = Field(None, ge=1, le=200, description="可选：限制每个来源类型最多刷新页数")
+    force_publish: bool = Field(False, description="忽略数量/完整率门禁并发布，默认关闭")
 
 
 class RecruitmentAIReportRequest(BaseModel):
@@ -43,6 +57,21 @@ class RecruitmentAIReportRequest(BaseModel):
     resume: str = ""
     compare_sources: List[str] = Field(default_factory=list)
     selected_interview_ids: List[int] = Field(default_factory=list)
+    model_id: Optional[int] = None
+
+
+class AIModelMutationRequest(BaseModel):
+    model: str
+    channel_name: str
+    endpoint: str
+    api_key: str = ""
+    description: str = ""
+    enabled: bool = True
+    is_default: bool = False
+
+
+class AIModelTestRequest(BaseModel):
+    model_id: int
 
 SOURCE_META = {
     "alibaba": {
@@ -66,6 +95,13 @@ SOURCE_META = {
         "logo": "/company-logos/字节跳动.svg",
         "supported_recruitment_types": ["campus", "intern", "social"],
     },
+    "deepseek": {
+        "source": "deepseek",
+        "company": "DeepSeek",
+        "description": "DeepSeek 招聘官网公开岗位",
+        "logo": "/company-logos/deepseek-copy.svg",
+        "supported_recruitment_types": ["social"],
+    },
     "huawei": {
         "source": "huawei",
         "company": "华为",
@@ -79,6 +115,13 @@ SOURCE_META = {
         "description": "京东招聘官网公开岗位",
         "logo": "/company-logos/jd.svg",
         "supported_recruitment_types": ["campus", "intern"],
+    },
+    "kimi": {
+        "source": "kimi",
+        "company": "Kimi（月之暗面）",
+        "description": "月之暗面招聘官网公开岗位",
+        "logo": "https://careers.kimi.com/favicon.ico?favicon.151bc5b8.ico",
+        "supported_recruitment_types": ["campus", "intern", "social"],
     },
     "kuaishou": {
         "source": "kuaishou",
@@ -94,11 +137,46 @@ SOURCE_META = {
         "logo": "/company-logos/美团.svg",
         "supported_recruitment_types": ["campus", "intern", "social"],
     },
+    "minimax": {
+        "source": "minimax",
+        "company": "MiniMax",
+        "description": "MiniMax 招聘官网公开岗位",
+        "logo": "/company-logos/minimax.svg",
+        "supported_recruitment_types": ["campus", "intern", "social"],
+    },
+    "pdd": {
+        "source": "pdd",
+        "company": "拼多多",
+        "description": "拼多多招聘官网公开岗位",
+        "logo": "/company-logos/拼多多.svg",
+        "supported_recruitment_types": ["campus"],
+    },
     "tencent": {
         "source": "tencent",
         "company": "腾讯",
         "description": "腾讯招聘官网公开岗位",
         "logo": "/company-logos/腾讯-01.svg",
+        "supported_recruitment_types": ["campus", "intern", "social"],
+    },
+    "xiaomi": {
+        "source": "xiaomi",
+        "company": "小米",
+        "description": "小米招聘官网公开岗位",
+        "logo": "/company-logos/小米.svg",
+        "supported_recruitment_types": ["campus", "intern", "social"],
+    },
+    "xiaohongshu": {
+        "source": "xiaohongshu",
+        "company": "小红书",
+        "description": "小红书招聘官网公开岗位",
+        "logo": "https://www.xiaohongshu.com/favicon.ico",
+        "supported_recruitment_types": ["campus", "intern", "social"],
+    },
+    "zhipu": {
+        "source": "zhipu",
+        "company": "智谱 AI",
+        "description": "智谱 AI 招聘官网公开岗位",
+        "logo": "/company-logos/智谱logo.svg",
         "supported_recruitment_types": ["campus", "intern", "social"],
     },
 }
@@ -149,8 +227,76 @@ TRACKS = {
 }
 
 CACHE_TTL_SECONDS = 300
-CLASSIFICATION_CACHE_VERSION = "tracks-v2"
 _page_cache: Dict[Tuple[str, str, str, str, int, int, str], Tuple[float, dict]] = {}
+
+
+LEGACY_TRACK_BY_ROLE = {
+    "backend_software": "backend",
+    "sre_devops": "backend",
+    "security": "backend",
+    "game_multimedia": "client",
+    "frontend_fullstack": "frontend",
+    "client": "client",
+    "testing_quality": "testing",
+    "data_analysis": "data",
+    "data_engineering": "data",
+    "ai_algorithm": "ai",
+    "ai_application": "ai",
+    "ai_infra": "ai",
+}
+
+SPECIALTY_RULES = {
+    "ai_related": ["人工智能", "AI", "大模型", "LLM", "AIGC", "Agent", "智能体", "RAG", "机器学习", "深度学习"],
+    "llm": ["大模型", "LLM", "语言模型"],
+    "agent_rag": ["Agent", "智能体", "RAG", "知识库"],
+    "recommendation": ["推荐系统", "推荐算法"],
+    "search": ["搜索算法", "搜索引擎"],
+    "computer_vision": ["计算机视觉", "视觉算法", "图像识别"],
+    "nlp_speech": ["自然语言处理", "NLP", "ASR", "TTS", "语音识别", "语音合成"],
+    "multimodal_aigc": ["多模态", "AIGC", "图像生成", "视频生成"],
+    "ai_safety": ["AI安全", "AI Safety", "模型安全", "模型对齐", "红队"],
+    "embodied_ai": ["具身智能", "具身", "机器人学习"],
+    "ai_coding": ["AI Coding", "代码生成", "编程助手"],
+    "training_inference": ["模型训练", "训练平台", "模型推理", "推理引擎", "训推", "算子优化"],
+    "ai_chip": ["AI芯片", "AI 芯片", "NPU", "GPU", "昇腾"],
+    "cloud_native": ["云原生", "Kubernetes", "容器平台"],
+    "distributed_systems": ["分布式", "高并发", "服务治理"],
+    "storage_database": ["数据库", "存储系统", "数据存储"],
+    "network": ["网络架构", "网络系统", "RDMA", "网络工程"],
+    "audio_video": ["音视频", "编解码", "流媒体"],
+    "graphics": ["图形学", "图形渲染", "渲染引擎"],
+    "game_engine": ["游戏引擎", "UE5", "Unity"],
+}
+
+BUSINESS_DOMAIN_RULES = {
+    "ecommerce": ["电商", "零售", "交易平台"],
+    "ads": ["广告", "商业化"],
+    "payment_finance": ["支付", "金融", "信贷", "风控"],
+    "gaming": ["游戏"],
+    "cloud": ["云计算", "腾讯云", "阿里云", "火山引擎"],
+    "enterprise": ["企业服务", "办公", "ToB", "B端"],
+    "content_social": ["内容", "社交", "直播", "短视频"],
+    "international": ["国际化", "国际", "海外"],
+}
+
+TECH_STACK_RULES = {
+    "Java": ["Java"],
+    "Go": ["Golang", "Go"],
+    "Python": ["Python"],
+    "C++": ["C++"],
+    "JavaScript/TypeScript": ["JavaScript", "TypeScript"],
+    "React": ["React"],
+    "Vue": ["Vue"],
+    "MySQL": ["MySQL"],
+    "Redis": ["Redis"],
+    "Kafka": ["Kafka"],
+    "Flink": ["Flink"],
+    "Spark": ["Spark"],
+    "Kubernetes": ["Kubernetes", "K8s"],
+    "Docker": ["Docker"],
+    "LLM": ["大模型", "LLM"],
+    "RAG": ["RAG"],
+}
 
 DOMESTIC_LOCATION_HINTS = {
     "中国",
@@ -189,6 +335,22 @@ OVERSEAS_LOCATION_HINTS = {
     "日本",
     "Korea",
     "韩国",
+    "慕尼黑",
+    "吉隆坡",
+    "曼谷",
+    "雅加达",
+    "东京",
+    "班加罗尔",
+    "伊斯坦布尔",
+    "马尼拉",
+    "巴黎",
+    "马德里",
+    "胡志明",
+    "布拉格",
+    "圣地亚哥",
+    "金边",
+    "杜塞尔多夫",
+    "拉合尔",
 }
 
 NEGATIVE_TITLE_HINTS = ["前端", "客户端", "测试", "QA", "运营", "产品经理", "销售", "市场", "设计"]
@@ -283,13 +445,6 @@ TRACK_CLASSIFIERS = {
     },
 }
 
-ENGLISH_TOKEN_PATTERNS = {
-    "go": re.compile(r"(?<![a-z0-9])go(?![a-z0-9])", re.IGNORECASE),
-    "web": re.compile(r"(?<![a-z0-9])web(?![a-z0-9])", re.IGNORECASE),
-    "qa": re.compile(r"(?<![a-z0-9])qa(?![a-z0-9])", re.IGNORECASE),
-    "cv": re.compile(r"(?<![a-z0-9])cv(?![a-z0-9])", re.IGNORECASE),
-    "ai": re.compile(r"(?<![a-z0-9])ai(?![a-z0-9])", re.IGNORECASE),
-}
 
 
 def _is_domestic_job(item) -> bool:
@@ -303,29 +458,38 @@ def _is_domestic_job(item) -> bool:
             item.title,
         ]
     )
-    if any(hint in location_text for hint in OVERSEAS_LOCATION_HINTS):
-        return False
     if location_only:
-        return any(hint in location_only for hint in DOMESTIC_LOCATION_HINTS)
+        if any(hint in location_only for hint in DOMESTIC_LOCATION_HINTS):
+            return True
+        if any(hint in location_only for hint in OVERSEAS_LOCATION_HINTS):
+            return False
+        return bool(re.search(r"[\u4e00-\u9fff]", location_only))
     if not item.location and not item.country:
         return True
+    if any(hint in location_text for hint in OVERSEAS_LOCATION_HINTS):
+        return False
     return any(hint in location_text for hint in DOMESTIC_LOCATION_HINTS)
 
 
-def _contains_hint(text: str, hint: str) -> bool:
-    lowered = hint.lower()
-    if lowered in ENGLISH_TOKEN_PATTERNS:
-        return bool(ENGLISH_TOKEN_PATTERNS[lowered].search(text))
-    return lowered in text.lower()
 
 
 def _field_score(text: str, hints: List[str], weight: int) -> int:
     return sum(weight for hint in hints if _contains_hint(text, hint))
 
 
+def _official_taxonomy_text(item) -> str:
+    taxonomy = getattr(item, "official_taxonomy", None) or {}
+    values = []
+    for key in ("level1", "level2", "level3"):
+        level = taxonomy.get(key) or {}
+        values.extend([level.get("name"), level.get("code")])
+    values.extend((tag or {}).get("name") for tag in taxonomy.get("tags") or [] if isinstance(tag, dict))
+    return " ".join(str(value) for value in values if value not in (None, ""))
+
+
 def _classification_text(item) -> Tuple[str, str, str]:
     title = str(item.title or "")
-    category = " ".join(str(value or "") for value in [item.category, item.job_family, item.product])
+    category = " ".join(str(value or "") for value in [item.category, item.job_family, item.product, _official_taxonomy_text(item)])
     body = " ".join(
         str(value or "")
         for value in [
@@ -336,6 +500,28 @@ def _classification_text(item) -> Tuple[str, str, str]:
         ]
     )
     return title, category, body
+
+
+def _matching_labels(text: str, rules: Dict[str, List[str]]) -> List[str]:
+    return [label for label, hints in rules.items() if any(_contains_hint(text, hint) for hint in hints)]
+
+
+def _classify_job(item) -> dict:
+    title, official, body = _classification_text(item)
+    classification = classify_role(title, official, body)
+    taxonomy = getattr(item, "official_taxonomy", None) or {}
+    classification["classification_meta"]["source_field_paths"] = [
+        level.get("path")
+        for level in (taxonomy.get(key) or {} for key in ("level1", "level2", "level3"))
+        if level.get("path")
+    ]
+    tag_text = f"{title} {official} {body}"
+    classification.update({
+        "specialties": _matching_labels(tag_text, SPECIALTY_RULES),
+        "business_domains": _matching_labels(tag_text, BUSINESS_DOMAIN_RULES),
+        "tech_stack": _matching_labels(tag_text, TECH_STACK_RULES),
+    })
+    return classification
 
 
 def _track_scores(item) -> Dict[str, int]:
@@ -387,12 +573,16 @@ def _display_category_from_text(item) -> Optional[str]:
 
 
 def _annotate_job(item):
-    track_id, track_name, _ = _infer_track(item)
+    classification = _classify_job(item)
+    for key, value in classification.items():
+        setattr(item, key, value)
+    track_id = LEGACY_TRACK_BY_ROLE.get(classification["role_family"])
+    track_name = (TRACKS.get(track_id) or {}).get("name")
     item.inferred_track = track_id
     item.inferred_track_name = track_name
     official = _official_category(item)
-    if track_name:
-        item.display_category = track_name
+    if classification["role_family"] in ROLE_FAMILY_LABELS:
+        item.display_category = ROLE_FAMILY_LABELS[classification["role_family"]]
     else:
         inferred_display = _display_category_from_text(item)
         if inferred_display:
@@ -417,11 +607,16 @@ def _as_job_object(job: dict):
 
 def _annotate_job_dict(job: dict) -> dict:
     item = _as_job_object(job)
-    track_id, track_name, _ = _infer_track(item)
+    classification = _classify_job(item)
+    job.update(classification)
+    track_id = LEGACY_TRACK_BY_ROLE.get(classification["role_family"])
+    track_name = (TRACKS.get(track_id) or {}).get("name")
     official = _official_category(item)
-    job["inferred_track"] = job.get("inferred_track") or track_id
-    job["inferred_track_name"] = job.get("inferred_track_name") or track_name
-    if not job.get("display_category"):
+    job["inferred_track"] = track_id
+    job["inferred_track_name"] = track_name
+    if classification["role_family"] in ROLE_FAMILY_LABELS:
+        job["display_category"] = ROLE_FAMILY_LABELS[classification["role_family"]]
+    elif not job.get("display_category"):
         if track_name:
             job["display_category"] = track_name
         else:
@@ -454,9 +649,66 @@ def _score_saved_job(job: dict, track: str, keyword: str) -> int:
     return _score_job(_as_job_object(job), track, keyword)
 
 
-def _filter_saved_jobs(jobs: List[dict], keyword: str, track: str, page: int, page_size: int) -> dict:
+def _is_ai_hot_job(job: dict) -> bool:
+    if job.get("role_family") in AI_HOT_FAMILIES:
+        return True
+    title, official, _ = _classification_text(_as_job_object(job))
+    return any(_contains_hint(f"{title} {official}", hint) for hint in AI_HOT_TITLE_HINTS)
+
+
+def _filter_saved_jobs(
+    jobs: List[dict],
+    keyword: str,
+    track: str,
+    page: int,
+    page_size: int,
+    role_group: str = "",
+    role_family: str = "",
+    ai_hot: bool = False,
+) -> dict:
     keyword = keyword.strip()
     filtered = [_annotate_job_dict({**job}) for job in jobs]
+    group_counts: Dict[str, int] = {}
+    family_counts: Dict[str, Dict[str, int]] = {}
+    for job in filtered:
+        group = job.get("role_group") or "unknown"
+        family = job.get("role_family") or "unknown"
+        group_counts[group] = group_counts.get(group, 0) + 1
+        group_families = family_counts.setdefault(group, {})
+        group_families[family] = group_families.get(family, 0) + 1
+
+    role_groups = []
+    for group in ROLE_GROUP_LABELS:
+        if not group_counts.get(group):
+            continue
+        families = [
+            {
+                "id": family,
+                "name": ROLE_FAMILY_LABELS.get(family, "其他岗位" if family == "unknown" else family),
+                "count": count,
+            }
+            for family, count in sorted(
+                family_counts.get(group, {}).items(),
+                key=lambda entry: (
+                    AI_FAMILY_PRIORITY.get(entry[0], len(AI_FAMILY_PRIORITY)),
+                    -entry[1],
+                    entry[0],
+                ),
+            )
+        ]
+        role_groups.append({
+            "id": group,
+            "name": ROLE_GROUP_LABELS[group],
+            "count": group_counts[group],
+            "role_families": families,
+        })
+
+    role_families = [
+        family
+        for group in role_groups
+        for family in group["role_families"]
+        if not role_group or group["id"] == role_group
+    ]
     if keyword:
         lowered = keyword.lower()
         filtered = [
@@ -471,6 +723,12 @@ def _filter_saved_jobs(jobs: List[dict], keyword: str, track: str, page: int, pa
             job for job in filtered
             if (job.get("inferred_track") == track or _score_saved_job(job, track, keyword) > 0)
         ]
+    if role_group:
+        filtered = [job for job in filtered if job.get("role_group") == role_group]
+    if role_family:
+        filtered = [job for job in filtered if job.get("role_family") == role_family]
+    if ai_hot:
+        filtered = [job for job in filtered if _is_ai_hot_job(job)]
     if keyword or track:
         filtered.sort(
             key=lambda job: (
@@ -484,6 +742,9 @@ def _filter_saved_jobs(jobs: List[dict], keyword: str, track: str, page: int, pa
         "items": filtered[start:start + page_size],
         "total": len(filtered),
         "has_more": start + page_size < len(filtered),
+        "facet_total": len(jobs),
+        "role_groups": role_groups,
+        "role_families": role_families,
     }
 
 
@@ -650,15 +911,72 @@ def _fetch_jobs(source: str, keyword: str, track: str, recruitment_type: str, pa
     return payload
 
 
-def _crawl_jobs_for_refresh(source: str, recruitment_type: str, max_pages: Optional[int]) -> List[dict]:
+def _schema_paths(value, prefix: str = "", depth: int = 2) -> set:
+    if depth < 0:
+        return set()
+    paths = set()
+    if isinstance(value, dict):
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else str(key)
+            paths.add(path)
+            paths.update(_schema_paths(child, path, depth - 1))
+    elif isinstance(value, list):
+        for child in value[:3]:
+            paths.update(_schema_paths(child, f"{prefix}[]", depth - 1))
+    return paths
+
+
+def _crawl_jobs_for_refresh(source: str, recruitment_type: str, max_pages: Optional[int]) -> dict:
     adapter = create_adapter(source, sleep_interval=0.05)
-    jobs = adapter.fetch_all(
+    fetched = adapter.fetch_all(
         max_pages=max_pages,
         page_size=adapter.max_page_size,
         recruitment_type=recruitment_type,
         include_detail=True,
     )
-    return _dump_jobs([item for item in jobs if _is_domestic_job(item)])
+    unique = {item.source_job_id: item for item in fetched if item.source_job_id and _is_domestic_job(item)}
+    schema_paths = set()
+    for item in unique.values():
+        schema_paths.update(_schema_paths(item.raw_data))
+    fingerprint = hashlib.sha256("\n".join(sorted(schema_paths)).encode()).hexdigest()[:16] if schema_paths else None
+    return {"jobs": _dump_jobs(list(unique.values())), "schema_fingerprint": fingerprint}
+
+
+def _refresh_quality(jobs: List[dict], previous_count: int, schema_fingerprint: Optional[str], previous_quality: dict) -> dict:
+    count = len(jobs)
+    ratio = lambda matched: round(matched / count, 4) if count else 0.0
+    identity_coverage = ratio(sum(bool(job.get("source_job_id") and job.get("title") and job.get("source_url")) for job in jobs))
+    detail_completeness = ratio(sum(bool(str(job.get("description") or "").strip() and str(job.get("requirements") or "").strip()) for job in jobs))
+    taxonomy_coverage = ratio(sum(any(
+        (taxonomy.get(level) or {}).get("name") or (taxonomy.get(level) or {}).get("code")
+        for level in ("level1", "level2", "level3")
+    ) for taxonomy in (job.get("official_taxonomy") or {} for job in jobs)))
+    unknown_role_rate = ratio(sum(job.get("role_family") == "unknown" for job in jobs))
+    drop_ratio = round((previous_count - count) / previous_count, 4) if previous_count and count < previous_count else 0.0
+    issues = []
+    if previous_count and not count:
+        issues.append("官网本次返回 0 条，但上一版本存在岗位")
+    elif previous_count and drop_ratio > 0.7:
+        issues.append(f"岗位数量较上一版本下降 {drop_ratio:.0%}")
+    if count and identity_coverage < 0.98:
+        issues.append(f"岗位标识完整率仅 {identity_coverage:.0%}")
+    previous_detail = float(previous_quality.get("detail_completeness") or 0)
+    if count and (detail_completeness < 0.5 or (previous_detail and detail_completeness < previous_detail - 0.25)):
+        issues.append(f"职责/要求完整率仅 {detail_completeness:.0%}")
+    previous_schema = previous_quality.get("schema_fingerprint")
+    return {
+        "previous_count": previous_count,
+        "job_count": count,
+        "drop_ratio": drop_ratio,
+        "identity_coverage": identity_coverage,
+        "detail_completeness": detail_completeness,
+        "taxonomy_coverage": taxonomy_coverage,
+        "unknown_role_rate": unknown_role_rate,
+        "schema_fingerprint": schema_fingerprint,
+        "schema_changed": bool(previous_schema and schema_fingerprint and previous_schema != schema_fingerprint),
+        "issues": issues,
+        "publishable": not issues,
+    }
 
 
 def _refresh_targets(source: str, recruitment_type: str) -> List[Tuple[str, str]]:
@@ -711,6 +1029,7 @@ async def get_job_interviews(
     job = await recruitment_job_repo.get_latest_job(source.strip().lower(), recruitment_type.strip().lower(), source_job_id)
     if not job:
         return ApiResponse(message="获取成功", data=[])
+    job = _annotate_job_dict(job)
     records = await niuke_repo.search_related_interviews(
         job["company"],
         _interview_keywords(job),
@@ -759,6 +1078,9 @@ async def get_recruitment_jobs(
     source: str = Query("tencent", description="招聘来源"),
     keyword: str = Query("", max_length=80, description="岗位关键词"),
     track: str = Query("", max_length=30, description="岗位方向"),
+    role_group: str = Query("", max_length=40, description="统一职位大类"),
+    role_family: str = Query("", max_length=40, description="统一岗位族"),
+    ai_hot: bool = Query(False, description="只看 AI 热门岗位"),
     recruitment_type: str = Query("campus", max_length=20, description="招聘类型：campus/intern/social"),
     page: int = Query(1, ge=1, le=500),
     page_size: int = Query(12, ge=1, le=24),
@@ -772,17 +1094,35 @@ async def get_recruitment_jobs(
     track = track.strip().lower()
     if track and track not in TRACKS:
         raise BadRequestException(f"不支持的岗位方向：{track}")
+    role_group = role_group.strip().lower()
+    if role_group and role_group not in ROLE_GROUP_LABELS:
+        raise BadRequestException(f"不支持的职位大类：{role_group}")
+    role_family = role_family.strip().lower()
+    if role_family and role_family not in {*ROLE_FAMILY_LABELS, "unknown"}:
+        raise BadRequestException(f"不支持的岗位族：{role_family}")
     recruitment_type = recruitment_type.strip().lower() or "campus"
     if recruitment_type not in RECRUITMENT_TYPES:
         raise BadRequestException(f"不支持的招聘类型：{recruitment_type}")
 
     jobs = await recruitment_job_repo.list_latest_jobs(source, recruitment_type)
-    result = _filter_saved_jobs(jobs, keyword.strip(), track, page, page_size)
+    result = _filter_saved_jobs(
+        jobs,
+        keyword.strip(),
+        track,
+        page,
+        page_size,
+        role_group=role_group,
+        role_family=role_family,
+        ai_hot=ai_hot,
+    )
     adapter_company = SOURCE_META.get(source, {}).get("company", source)
     data = {
         "source": source,
         "company": adapter_company,
         "track": track or None,
+        "role_group": role_group or None,
+        "role_family": role_family or None,
+        "ai_hot": ai_hot,
         "recruitment_type": recruitment_type,
         "keywords": list((TRACKS.get(track) or {}).get("keywords") or []) if track and not keyword else [],
         "items": result["items"],
@@ -790,6 +1130,9 @@ async def get_recruitment_jobs(
         "page_size": page_size,
         "total": result["total"],
         "has_more": result["has_more"],
+        "facet_total": result["facet_total"],
+        "role_groups": result["role_groups"],
+        "role_families": result["role_families"],
         "cached": False,
         "from_database": True,
     }
@@ -810,12 +1153,36 @@ async def refresh_recruitment_jobs(request: RecruitmentRefreshRequest):
     for source, recruitment_type in targets:
         await recruitment_job_repo.create_refresh_run(version, source, recruitment_type, started_at)
         try:
-            jobs = await run_in_threadpool(_crawl_jobs_for_refresh, source, recruitment_type, request.max_pages)
+            previous_count = await recruitment_job_repo.latest_job_count(source, recruitment_type)
+            previous_quality = await recruitment_job_repo.latest_refresh_quality(source, recruitment_type)
+            crawled = await run_in_threadpool(_crawl_jobs_for_refresh, source, recruitment_type, request.max_pages)
+            jobs = crawled["jobs"]
+            quality = _refresh_quality(jobs, previous_count, crawled.get("schema_fingerprint"), previous_quality)
+            if not quality["publishable"] and not request.force_publish:
+                error = "；".join(quality["issues"])
+                await recruitment_job_repo.finish_refresh_run(
+                    version, source, recruitment_type, "suspicious", len(jobs), error, quality
+                )
+                results.append({
+                    "source": source,
+                    "recruitment_type": recruitment_type,
+                    "status": "suspicious",
+                    "job_count": len(jobs),
+                    "error": error,
+                    "quality": quality,
+                })
+                continue
             await recruitment_job_repo.upsert_many(jobs, version, started_at)
             await recruitment_job_repo.mark_latest_version(source, recruitment_type, version)
-            await recruitment_job_repo.finish_refresh_run(version, source, recruitment_type, "success", len(jobs))
+            await recruitment_job_repo.finish_refresh_run(version, source, recruitment_type, "success", len(jobs), quality=quality)
             total_jobs += len(jobs)
-            results.append({"source": source, "recruitment_type": recruitment_type, "status": "success", "job_count": len(jobs)})
+            results.append({
+                "source": source,
+                "recruitment_type": recruitment_type,
+                "status": "success",
+                "job_count": len(jobs),
+                "quality": quality,
+            })
         except Exception as exc:
             await recruitment_job_repo.finish_refresh_run(version, source, recruitment_type, "failed", 0, str(exc)[:1000])
             results.append({"source": source, "recruitment_type": recruitment_type, "status": "failed", "job_count": 0, "error": str(exc)})
@@ -832,11 +1199,77 @@ async def refresh_recruitment_jobs(request: RecruitmentRefreshRequest):
     )
 
 
+@router.get("/ai-models", response_model=ApiResponse[list])
+async def list_public_ai_models():
+    return ApiResponse(message="获取成功", data=ai_model_registry.list_public())
+
+
+@router.get("/admin/ai-models", response_model=ApiResponse[list])
+async def list_admin_ai_models():
+    return ApiResponse(message="获取成功", data=ai_model_registry.list_admin())
+
+
+async def _save_ai_model(request: AIModelMutationRequest, model_id: Optional[int] = None):
+    try:
+        await ai_model_registry.save_override(request.model_dump(), model_id)
+    except ValueError as exc:
+        raise BadRequestException(str(exc)) from exc
+    return ApiResponse(message="保存成功", data=ai_model_registry.list_admin())
+
+
+@router.post("/admin/ai-models", response_model=ApiResponse[list])
+async def create_ai_model(request: AIModelMutationRequest):
+    return await _save_ai_model(request)
+
+
+@router.put("/admin/ai-models/{model_id}", response_model=ApiResponse[list])
+async def update_ai_model(model_id: int, request: AIModelMutationRequest):
+    return await _save_ai_model(request, model_id)
+
+
+@router.delete("/admin/ai-models/{model_id}", response_model=ApiResponse[dict])
+async def delete_ai_model(model_id: int):
+    if not await ai_model_registry.delete_override(model_id):
+        raise NotFoundException("数据库模型配置不存在")
+    return ApiResponse(message="删除成功", data={"model_id": model_id})
+
+
+@router.post("/admin/ai-models/test", response_model=ApiResponse[dict])
+async def test_ai_model(request: AIModelTestRequest):
+    started = time.perf_counter()
+
+    def perform_test():
+        response = post_chat_completion(
+            [{"role": "user", "content": "只回复 OK"}],
+            temperature=0,
+            timeout=30,
+            model_id=request.model_id,
+        )
+        if response.status_code >= 400:
+            raise ValueError(f"模型请求失败，HTTP {response.status_code}：{response.text[:300]}")
+        if not extract_chat_completion_text(response.json()):
+            raise ValueError("模型返回内容为空")
+
+    try:
+        await run_in_threadpool(perform_test)
+    except ValueError as exc:
+        raise BadRequestException(str(exc)) from exc
+    return ApiResponse(message="连接成功", data={
+        "model_id": request.model_id,
+        "success": True,
+        "elapsed_ms": round((time.perf_counter() - started) * 1000),
+    })
+
+
 @router.post("/ai-report", response_model=ApiResponse[dict])
 async def generate_recruitment_ai_report(
     request: RecruitmentAIReportRequest,
     user_id: int = Depends(require_user_id),
 ):
+    try:
+        selected_model = ai_model_registry.resolve(model_id=request.model_id)
+    except ValueError as exc:
+        raise BadRequestException(str(exc)) from exc
     request.source = request.source.strip().lower()
     request.recruitment_type = request.recruitment_type.strip().lower() or "campus"
     request.track = request.track.strip().lower()
@@ -847,10 +1280,13 @@ async def generate_recruitment_ai_report(
     resume_types = {"resume_job", "full", "resume_match"}
     if request.report_type in resume_types and not request.resume.strip():
         raise BadRequestException("该报告类型需要提供简历内容")
+    if request.report_type == "full" and not request.source_job_id:
+        raise BadRequestException("完整报告需要选择具体目标岗位")
 
     if request.source_job_id:
         job = await recruitment_job_repo.get_latest_job(request.source, request.recruitment_type, request.source_job_id)
         if job:
+            job = _annotate_job_dict(job)
             jobs = [job]
     elif request.report_type in single_company_types:
         jobs = await _job_samples(request.source, request.recruitment_type, request.track, 8)
@@ -860,9 +1296,9 @@ async def generate_recruitment_ai_report(
     interviews: List[dict] = []
     if request.report_type in interview_types:
         if request.selected_interview_ids:
-            interviews = await niuke_repo.get_by_ids(request.selected_interview_ids, 8)
+            interviews = await niuke_repo.get_by_ids(request.selected_interview_ids, 12)
         else:
-            interviews = await _related_interviews_for_jobs(jobs, 8)
+            interviews = await _related_interviews_for_jobs(jobs, 12)
     if request.report_type in interview_types and not interviews:
         raise BadRequestException("该公司/岗位方向暂无可用于分析的面经")
 
@@ -894,12 +1330,12 @@ async def generate_recruitment_ai_report(
     elif request.report_type == "resume_job":
         prompt = f"请根据目标公司的岗位要求和候选人简历，输出结构化 Markdown 简历匹配报告，包含：结论摘要、匹配度、已有优势、能力缺口、逐项简历修改建议、投递风险。不要输出 HTML。\n{job_context}\n\n候选人简历：\n{request.resume[:8000]}"
     elif request.report_type == "full":
-        prompt = f"请根据岗位要求、用户选定的最近相关面经和候选人简历，输出结构化 Markdown 完整求职分析报告，包含：结论摘要、匹配度、优势、短板、面试风险、补强计划、简历修改建议。不要输出 HTML。\n{job_context}\n\n相关面经：\n{interviews_brief(interviews)}\n\n候选人简历：\n{request.resume[:8000] or '未提供'}"
+        prompt = build_full_report_prompt(job_context, interviews, request.resume)
     else:
         raise BadRequestException("不支持的报告类型")
 
     try:
-        report = await run_in_threadpool(call_ai_report, prompt)
+        report = await run_in_threadpool(call_ai_report, prompt, None, selected_model.id)
     except ValueError as exc:
         raise BadRequestException(str(exc)) from exc
     if request.report_type in {"company_compare", "resume_match"}:
@@ -907,15 +1343,17 @@ async def generate_recruitment_ai_report(
     else:
         company = SOURCE_META.get(request.source, {}).get("company", request.company or request.source)
     track_name = (TRACKS.get(request.track) or {}).get("name", request.track)
+    report_title = f"{company or '多公司'} · {job.get('title')}" if request.report_type == "full" and job else f"{company or '多公司'} · {track_name}"
     saved = await ai_report_repo.save(user_id, {
-        "title": f"{company or '多公司'} · {track_name}",
+        "title": report_title,
         "report_type": request.report_type,
         "company": company,
         "track": request.track,
         "track_name": track_name,
         "recruitment_type": request.recruitment_type,
         "content": report,
-        "model": settings.OPENAI_TEXT_MODEL,
+        "model": selected_model.model,
+        "model_id": selected_model.id if selected_model.id > 0 else None,
     })
     return ApiResponse(message="生成成功", data={**saved, "report": saved["content"]})
 
